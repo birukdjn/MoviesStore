@@ -1,82 +1,90 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration.UserSecrets;
 using MoviesStore.data;
 using MoviesStore.models;
 
 namespace MoviesStore.Controllers
 {
-   
-        [Route("api/[controller]")]
-        [ApiController]
-        [Authorize]
+    [Route("api/[controller]")]
+    [ApiController]
+    [Authorize]
+    public class FavoritesController : ControllerBase
+    {
+        private readonly AppDbContext _context;
 
-        public class FavoritesController : ControllerBase
+        public FavoritesController(AppDbContext context)
         {
-            private readonly AppDbContext _context;
+            _context = context;
+        }
 
-            public FavoritesController(AppDbContext context)
+        // Add a movie to favorites
+        [HttpPost("{movieId}")]
+        public IActionResult AddToFavorites(int movieId)
+        {
+            var username = User.Identity?.Name;
+            var user = _context.Users.FirstOrDefault(u => u.Username == username);
+            if (user == null) return Unauthorized();
+
+            // Get the first profile of the user (you can allow selecting profile later)
+            var profile = _context.Profiles.FirstOrDefault(p => p.UserId == user.Id);
+            if (profile == null) return BadRequest("Profile not found");
+
+            // Check if already favorited
+            if (_context.Favorites.Any(f => f.ProfileId == profile.Id && f.MovieId == movieId))
+                return BadRequest("Movie already in favorites.");
+
+            var favorite = new Favorite
             {
-                _context = context;
-            }
+                ProfileId = profile.Id,
+                MovieId = movieId
+            };
 
-            [HttpPost("movieId")]
-            public IActionResult AddToFavorites(int movieId)
-            {
-                var username = User.Identity?.Name;
-                var user = _context.Users.FirstOrDefault(u => u.Username == username);
-                if (user == null)
-                    return Unauthorized();
+            _context.Favorites.Add(favorite);
+            _context.SaveChanges();
 
-                if (_context.Favorites.Any(f => f.UserId == user.Id && f.MovieId == movieId))
-                    return BadRequest("Movie is already in favorites.");
+            return Ok("Added to favorites");
+        }
 
-                var favorite = new Favorite
-                {
-                    UserId = user.Id,
-                    MovieId = movieId
-                };
-                _context.Favorites.Add(favorite);
-                _context.SaveChanges();
+        // Get all favorites for the current user's profile
+        [HttpGet]
+        public IActionResult GetFavorites()
+        {
+            var username = User.Identity?.Name;
+            var user = _context.Users.FirstOrDefault(u => u.Username == username);
+            if (user == null) return Unauthorized();
 
-                return Ok("Added to favorites");
-            }
+            var profile = _context.Profiles.FirstOrDefault(p => p.UserId == user.Id);
+            if (profile == null) return BadRequest("Profile not found");
 
-            [HttpGet]
-            public IActionResult GetFavorites()
-            {
-                var username = User.Identity?.Name;
-                var user = _context.Users.Include(u => u.Id).FirstOrDefault(u=>u.Username == username);
+            var favorites = _context.Favorites
+                .Where(f => f.ProfileId == profile.Id)
+                .Include(f => f.Movie)
+                .Select(f => f.Movie)
+                .ToList();
 
-                if (user == null) return Unauthorized();
+            return Ok(favorites);
+        }
 
-                var favorites = _context.Favorites
-                    .Where(f => f.UserId == user.Id)
-                    .Include(f => f.Movie)
-                    .Select(f => f.Movie)
-                    .ToList();
+        // Remove a movie from favorites
+        [HttpDelete("{movieId}")]
+        public IActionResult RemoveFavorite(int movieId)
+        {
+            var username = User.Identity?.Name;
+            var user = _context.Users.FirstOrDefault(u => u.Username == username);
+            if (user == null) return Unauthorized();
 
-                return Ok(favorites);
-            }
-            [HttpDelete("{movieId}")]
-            public IActionResult RemoveFavorite(int MovieId)
-            {
-                var username = User.Identity?.Name;
-                var user = _context.Users.FirstOrDefault(u => u.Username == username);
+            var profile = _context.Profiles.FirstOrDefault(p => p.UserId == user.Id);
+            if (profile == null) return BadRequest("Profile not found");
 
-                if (user ==null) return Unauthorized();
+            var favorite = _context.Favorites
+                .FirstOrDefault(f => f.ProfileId == profile.Id && f.MovieId == movieId);
+            if (favorite == null) return NotFound("Favorite not found.");
 
-                var favorite = _context.Favorites.FirstOrDefault(f => f.UserId==user.Id && f.MovieId==MovieId);
-                if(favorite == null) return NotFound("Favorite not found.");
-                _context.Favorites.Remove(favorite);
-                _context.SaveChanges();
+            _context.Favorites.Remove(favorite);
+            _context.SaveChanges();
 
-                return Ok("Removed from favorites.");
-
-
-            }
-
-
+            return Ok("Removed from favorites");
         }
     }
+}

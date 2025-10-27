@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MoviesStore.models;
+using MovieStoreApi.Models;
 
 namespace MoviesStore.data
 {
@@ -11,6 +12,9 @@ namespace MoviesStore.data
         public DbSet<Favorite> Favorites { get; set; }
 
         public DbSet<Rating> Ratings { get; set; }
+
+        public DbSet<Profile> Profiles { get; set; }
+
 
 
     }
