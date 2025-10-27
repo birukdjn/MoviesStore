@@ -12,6 +12,9 @@ namespace MoviesStore.data
 
         public DbSet<Rating> Ratings { get; set; }
 
+        public DbSet<Profile> Profiles { get; set; }
+
+
 
     }
 }

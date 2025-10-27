@@ -11,8 +11,8 @@ using MoviesStore.data;
 namespace MoviesStore.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251027135634_ratings")]
-    partial class Ratings
+    [Migration("20251028063126_AddProfiledwsTable")]
+    partial class AddProfiledwsTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -35,14 +35,14 @@ namespace MoviesStore.Migrations
                     b.Property<int>("MovieId")
                         .HasColumnType("int");
 
-                    b.Property<int>("UserId")
+                    b.Property<int>("ProfileId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("MovieId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("ProfileId");
 
                     b.ToTable("Favorites");
                 });
@@ -79,6 +79,32 @@ namespace MoviesStore.Migrations
                     b.ToTable("Movies");
                 });
 
+            modelBuilder.Entity("MoviesStore.models.Profile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Profiles");
+                });
+
             modelBuilder.Entity("MoviesStore.models.Rating", b =>
                 {
                     b.Property<int>("Id")
@@ -90,17 +116,17 @@ namespace MoviesStore.Migrations
                     b.Property<int>("MovieId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Score")
+                    b.Property<int>("ProfileId")
                         .HasColumnType("int");
 
-                    b.Property<int>("UserId")
+                    b.Property<int>("Score")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("MovieId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("ProfileId");
 
                     b.ToTable("Ratings");
                 });
@@ -129,18 +155,29 @@ namespace MoviesStore.Migrations
             modelBuilder.Entity("MoviesStore.models.Favorite", b =>
                 {
                     b.HasOne("MoviesStore.models.Movie", "Movie")
-                        .WithMany()
+                        .WithMany("Favorites")
                         .HasForeignKey("MovieId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("MoviesStore.models.Profile", "Profile")
+                        .WithMany("Favorites")
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Movie");
+
+                    b.Navigation("Profile");
+                });
+
+            modelBuilder.Entity("MoviesStore.models.Profile", b =>
+                {
                     b.HasOne("MoviesStore.models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Movie");
 
                     b.Navigation("User");
                 });
@@ -148,20 +185,34 @@ namespace MoviesStore.Migrations
             modelBuilder.Entity("MoviesStore.models.Rating", b =>
                 {
                     b.HasOne("MoviesStore.models.Movie", "Movie")
-                        .WithMany()
+                        .WithMany("Ratings")
                         .HasForeignKey("MovieId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MoviesStore.models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
+                    b.HasOne("MoviesStore.models.Profile", "Profile")
+                        .WithMany("Ratings")
+                        .HasForeignKey("ProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Movie");
 
-                    b.Navigation("User");
+                    b.Navigation("Profile");
+                });
+
+            modelBuilder.Entity("MoviesStore.models.Movie", b =>
+                {
+                    b.Navigation("Favorites");
+
+                    b.Navigation("Ratings");
+                });
+
+            modelBuilder.Entity("MoviesStore.models.Profile", b =>
+                {
+                    b.Navigation("Favorites");
+
+                    b.Navigation("Ratings");
                 });
 #pragma warning restore 612, 618
         }
