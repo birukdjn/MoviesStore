@@ -1,4 +1,5 @@
-﻿
+﻿using MoviesStore.models;
+
 namespace MoviesStore.models
 {
     public class Profile

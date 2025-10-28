@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MoviesStore.models;
+using MovieStoreApi.Models;
 
 namespace MoviesStore.data
 {

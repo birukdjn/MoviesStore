@@ -21,6 +21,32 @@ namespace MoviesStore.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MovieStoreApi.Models.Profile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Profiles");
+                });
+
             modelBuilder.Entity("MoviesStore.models.Favorite", b =>
                 {
                     b.Property<int>("Id")
@@ -149,6 +175,17 @@ namespace MoviesStore.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("MovieStoreApi.Models.Profile", b =>
+                {
+                    b.HasOne("MoviesStore.models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MoviesStore.models.Favorite", b =>
                 {
                     b.HasOne("MoviesStore.models.Movie", "Movie")
@@ -198,7 +235,7 @@ namespace MoviesStore.Migrations
                     b.Navigation("Profile");
                 });
 
-            modelBuilder.Entity("MoviesStore.models.Movie", b =>
+            modelBuilder.Entity("MovieStoreApi.Models.Profile", b =>
                 {
                     b.Navigation("Favorites");
 
