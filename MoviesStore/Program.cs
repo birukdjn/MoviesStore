@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MoviesStore.data;
+using MoviesStore.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -69,7 +69,7 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || true) //this is for testing purposes
 {
     app.UseSwagger();
     app.UseSwaggerUI();

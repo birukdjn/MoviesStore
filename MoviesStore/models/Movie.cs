@@ -16,6 +16,9 @@ namespace MoviesStore.models
         public List<Favorite> Favorites { get; set; } = new();
         public List<Rating> Ratings { get; set; } = new();
 
+        public int CategoryId { get; set; }      
+        public Category Category { get; set; } = null!;
+
 
     }
 }

@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MoviesStore.data;
+using MoviesStore.Data;
 using MoviesStore.models;
 
-namespace MovieStoreApi.Controllers
+namespace MoviesStore.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

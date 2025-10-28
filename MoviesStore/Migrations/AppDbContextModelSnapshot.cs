@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using MoviesStore.data;
+using MoviesStore.Data;
 
 #nullable disable
 
@@ -21,7 +21,7 @@ namespace MoviesStore.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("MovieStoreApi.Models.Profile", b =>
+            modelBuilder.Entity("MoviesStore.models.Category", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -29,22 +29,13 @@ namespace MoviesStore.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Profiles");
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("MoviesStore.models.Favorite", b =>
@@ -78,6 +69,9 @@ namespace MoviesStore.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -98,6 +92,8 @@ namespace MoviesStore.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
 
                     b.ToTable("Movies");
                 });
@@ -175,17 +171,6 @@ namespace MoviesStore.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("MovieStoreApi.Models.Profile", b =>
-                {
-                    b.HasOne("MoviesStore.models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("MoviesStore.models.Favorite", b =>
                 {
                     b.HasOne("MoviesStore.models.Movie", "Movie")
@@ -203,6 +188,17 @@ namespace MoviesStore.Migrations
                     b.Navigation("Movie");
 
                     b.Navigation("Profile");
+                });
+
+            modelBuilder.Entity("MoviesStore.models.Movie", b =>
+                {
+                    b.HasOne("MoviesStore.models.Category", "Category")
+                        .WithMany("Movies")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("MoviesStore.models.Profile", b =>
@@ -235,7 +231,12 @@ namespace MoviesStore.Migrations
                     b.Navigation("Profile");
                 });
 
-            modelBuilder.Entity("MovieStoreApi.Models.Profile", b =>
+            modelBuilder.Entity("MoviesStore.models.Category", b =>
+                {
+                    b.Navigation("Movies");
+                });
+
+            modelBuilder.Entity("MoviesStore.models.Movie", b =>
                 {
                     b.Navigation("Favorites");
 
