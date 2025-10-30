@@ -16,7 +16,7 @@ namespace MoviesStore.Controllers
         {
             _context = context;
         }
-
+         
         // Rate a movie
         [HttpPost("{movieId}")]
         public IActionResult RateMovie(int movieId, int score)
