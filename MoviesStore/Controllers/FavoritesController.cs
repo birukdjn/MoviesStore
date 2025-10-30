@@ -26,7 +26,7 @@ namespace MoviesStore.Controllers
             var user = _context.Users.FirstOrDefault(u => u.Username == username);
             if (user == null) return Unauthorized();
 
-            // Get the first profile of the user (you can allow selecting profile later)
+            // Get the first profile of the user 
             var profile = _context.Profiles.FirstOrDefault(p => p.UserId == user.Id);
             if (profile == null) return BadRequest("Profile not found");
 
