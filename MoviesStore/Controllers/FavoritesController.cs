@@ -8,18 +8,13 @@ namespace MoviesStore.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
-    public class FavoritesController : ControllerBase
+    public class FavoritesController(AppDbContext context) : ControllerBase
     {
-        private readonly AppDbContext _context;
-
-        public FavoritesController(AppDbContext context)
-        {
-            _context = context;
-        }
+        private readonly AppDbContext _context = context;
 
         // Add a movie to favorites
         [HttpPost("{movieId}")]
+        [Authorize(Roles ="Admin,User")]
         public IActionResult AddToFavorites(int movieId)
         {
             var username = User.Identity?.Name;
@@ -48,6 +43,8 @@ namespace MoviesStore.Controllers
 
         // Get all favorites for the current user's profile
         [HttpGet]
+        [Authorize(Roles = "Admin,User")]
+
         public IActionResult GetFavorites()
         {
             var username = User.Identity?.Name;
@@ -68,6 +65,7 @@ namespace MoviesStore.Controllers
 
         // Remove a movie from favorites
         [HttpDelete("{movieId}")]
+        [Authorize(Roles = "Admin,User")]
         public IActionResult RemoveFavorite(int movieId)
         {
             var username = User.Identity?.Name;

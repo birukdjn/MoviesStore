@@ -7,18 +7,13 @@ namespace MoviesStore.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class CategoriesController : ControllerBase
+    public class CategoriesController(AppDbContext context) : ControllerBase
     {
-        private readonly AppDbContext _context;
-
-        public CategoriesController(AppDbContext context)
-        {
-            _context = context;
-        }
+        private readonly AppDbContext _context = context;
 
         // Add Category
         [HttpPost]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "Admin")]
         public IActionResult AddCategory([FromBody] CategoryDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Name))
@@ -36,7 +31,7 @@ namespace MoviesStore.Controllers
 
         //  Get all categories
         [HttpGet]
-        [Authorize(Roles = "admin,user")] 
+        [Authorize(Roles = "Admin,User")] 
         public IActionResult GetCategories()
         {
             var categories = _context.Categories.ToList();
@@ -45,7 +40,7 @@ namespace MoviesStore.Controllers
 
         // Get category by ID
         [HttpGet("{id}")]
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "Admin,User")]
         public IActionResult GetCategoryById(int id)
         {
             var category = _context.Categories.Find(id);
@@ -57,7 +52,7 @@ namespace MoviesStore.Controllers
 
         //  Update category
         [HttpPut("{id}")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "Admin")]
         public IActionResult UpdateCategory(int id, [FromBody] CategoryDto dto)
         {
             var category = _context.Categories.Find(id);
@@ -72,7 +67,7 @@ namespace MoviesStore.Controllers
 
         // Delete category
         [HttpDelete("{id}")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "Admin")]
         public IActionResult DeleteCategory(int id)
         {
             var category = _context.Categories.Find(id);

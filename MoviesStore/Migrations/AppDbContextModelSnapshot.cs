@@ -41,23 +41,21 @@ namespace MoviesStore.Migrations
 
             modelBuilder.Entity("MoviesStore.models.Favorite", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<int>("ProfileId")
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("MovieId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ProfileId")
+                    b.Property<DateTime>("AddedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Id")
                         .HasColumnType("int");
 
-                    b.HasKey("Id");
+                    b.HasKey("ProfileId", "MovieId");
 
                     b.HasIndex("MovieId");
-
-                    b.HasIndex("ProfileId");
 
                     b.ToTable("Favorites");
                 });
@@ -87,6 +85,17 @@ namespace MoviesStore.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AgeRating")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("AverageRating")
+                        .HasColumnType("float");
+
+                    b.Property<string>("BackdropUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -95,8 +104,18 @@ namespace MoviesStore.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsOriginal")
+                        .HasColumnType("bit");
+
                     b.Property<int>("ReleaseYear")
                         .HasColumnType("int");
+
+                    b.Property<int>("RuntimeMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -119,7 +138,7 @@ namespace MoviesStore.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("MovieCategory");
+                    b.ToTable("MovieCategories");
                 });
 
             modelBuilder.Entity("MoviesStore.models.MovieGenre", b =>
@@ -134,7 +153,39 @@ namespace MoviesStore.Migrations
 
                     b.HasIndex("GenreId");
 
-                    b.ToTable("MovieGenre");
+                    b.ToTable("MovieGenres");
+                });
+
+            modelBuilder.Entity("MoviesStore.models.PlaybackPosition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("LastWatchedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MovieId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PositionInSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalDurationInSeconds")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MovieId");
+
+                    b.HasIndex("ProfileId");
+
+                    b.ToTable("PlaybackPositions");
                 });
 
             modelBuilder.Entity("MoviesStore.models.Profile", b =>
@@ -145,47 +196,19 @@ namespace MoviesStore.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Address")
+                    b.Property<string>("AvatarUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("City")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("IsKidsProfile")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("Country")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("DateOfBirth")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("State")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
-
-                    b.Property<string>("ZipCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -196,21 +219,21 @@ namespace MoviesStore.Migrations
 
             modelBuilder.Entity("MoviesStore.models.Rating", b =>
                 {
-                    b.Property<int>("MovieId")
-                        .HasColumnType("int");
-
                     b.Property<int>("ProfileId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("RatedAt")
+                    b.Property<int>("MovieId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RatedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Score")
                         .HasColumnType("int");
 
-                    b.HasKey("MovieId", "ProfileId");
+                    b.HasKey("ProfileId", "MovieId");
 
-                    b.HasIndex("ProfileId");
+                    b.HasIndex("MovieId");
 
                     b.ToTable("Ratings");
                 });
@@ -226,6 +249,10 @@ namespace MoviesStore.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -234,11 +261,17 @@ namespace MoviesStore.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("SubscriptionPlan")
+                        .HasColumnType("int");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -303,10 +336,29 @@ namespace MoviesStore.Migrations
                     b.Navigation("Movie");
                 });
 
+            modelBuilder.Entity("MoviesStore.models.PlaybackPosition", b =>
+                {
+                    b.HasOne("MoviesStore.models.Movie", "Movie")
+                        .WithMany("PlaybackPositions")
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MoviesStore.models.Profile", "Profile")
+                        .WithMany("PlaybackPositions")
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Movie");
+
+                    b.Navigation("Profile");
+                });
+
             modelBuilder.Entity("MoviesStore.models.Profile", b =>
                 {
                     b.HasOne("MoviesStore.models.User", "User")
-                        .WithMany()
+                        .WithMany("Profiles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -351,6 +403,8 @@ namespace MoviesStore.Migrations
 
                     b.Navigation("MovieGenres");
 
+                    b.Navigation("PlaybackPositions");
+
                     b.Navigation("Ratings");
                 });
 
@@ -358,7 +412,14 @@ namespace MoviesStore.Migrations
                 {
                     b.Navigation("Favorites");
 
+                    b.Navigation("PlaybackPositions");
+
                     b.Navigation("Ratings");
+                });
+
+            modelBuilder.Entity("MoviesStore.models.User", b =>
+                {
+                    b.Navigation("Profiles");
                 });
 #pragma warning restore 612, 618
         }

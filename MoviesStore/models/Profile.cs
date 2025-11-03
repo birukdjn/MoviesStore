@@ -4,19 +4,12 @@ namespace MoviesStore.models
     public class Profile
     {
         public int Id { get; set; }
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string PhoneNumber { get; set; } = string.Empty;
-        public string Country { get; set; } = string.Empty;
-        public string Address { get; set; } = string.Empty;
-        public string City { get; set; } = string.Empty;
-        public string State { get; set; } = string.Empty;
-        public string ZipCode { get; set; } = string.Empty;
-        public DateTime DateOfBirth { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string AvatarUrl { get; set; } = string.Empty;
+        public bool IsKidsProfile { get; set; } = false;
         public int UserId { get; set; }
         public User User { get; set; } = null!;
-
+        public ICollection<PlaybackPosition> PlaybackPositions { get; set; } = [];
         public List<Favorite> Favorites { get; set; } = [];
         public List<Rating> Ratings { get; set; } = [];
     }
