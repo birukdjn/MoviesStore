@@ -7,21 +7,16 @@ using MoviesStore.models;
 
 namespace MoviesStore.Controllers
 {
-    [Authorize]
+   
     [ApiController]
     [Route("api/[controller]")]
-    public class MoviesController : ControllerBase
+    public class MoviesController(AppDbContext context) : ControllerBase
     {
-        private readonly AppDbContext _context;
-
-        public MoviesController(AppDbContext context)
-        {
-            _context = context;
-        }
+        private readonly AppDbContext _context = context;
 
         // GET: All movies
         [HttpGet]
-        [Authorize(Roles ="admin,user")]
+        [Authorize(Roles ="Admin,User")]
         public async Task<ActionResult<IEnumerable<Movie>>> GetMovies()
         {
             var movies = await _context.Movies.ToListAsync();
@@ -32,7 +27,7 @@ namespace MoviesStore.Controllers
 
         // GET: Search movies by keyword
         [HttpGet("search")]
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "Admin,User")]
         public async Task<IActionResult> SearchMovies(string query)
         {
             if (string.IsNullOrWhiteSpace(query))
@@ -55,7 +50,7 @@ namespace MoviesStore.Controllers
 
         //GET: Paged movies
         [HttpGet("paged")]
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "Admin,User")]
         public IActionResult GetPagedMovies(int page = 1, int pageSize = 10)
         {
             var movies = _context.Movies
@@ -68,7 +63,7 @@ namespace MoviesStore.Controllers
 
         // GET: Filter movies by genre, year, or director
         [HttpGet("filter")]
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "Admin,User")]
         public IActionResult FilterMovies(int? genreId, int? categoryId,  int? year, string? director)
         {
             var query = _context.Movies.AsQueryable();
@@ -98,7 +93,7 @@ namespace MoviesStore.Controllers
 
         // GET: Single movie by ID
         [HttpGet("{id}")]
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "Admin,User")]
         public async Task<ActionResult<Movie>> GetMovie(int id)
         {
             var movie = await _context.Movies.FindAsync(id);
@@ -109,7 +104,7 @@ namespace MoviesStore.Controllers
 
         // GET: Recommend similar movies
         [HttpGet("recommend/{movieId}")]
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "Admin,User")]
         public async Task<IActionResult> RecommendMovies(int movieId)
         {
             var movie = _context.Movies.FirstOrDefault(m => m.Id == movieId);
@@ -129,7 +124,7 @@ namespace MoviesStore.Controllers
 
         // POST: Add a new movie
         [HttpPost]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<Movie>> AddMovie([FromBody] MovieCreateDto dto)
@@ -168,9 +163,9 @@ namespace MoviesStore.Controllers
             return CreatedAtAction(nameof(GetMovie), new { id = movie.Id }, movie);
         }
 
-        // ✅ PUT: Update a movie
+        // PUT: Update a movie
         [HttpPut("{id}")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "Admin")]
 
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -222,9 +217,9 @@ namespace MoviesStore.Controllers
             return NoContent();
         }
 
-        // ✅ DELETE: Delete a movie
+        // DELETE: Delete a movie
         [HttpDelete("{id}")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "Admin")]
 
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

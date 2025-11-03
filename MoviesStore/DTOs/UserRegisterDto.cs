@@ -1,5 +1,5 @@
 ﻿namespace MoviesStore.DTOs
 {
-    public record UserRegisterDto(string Username, string Password);
+    public record UserRegisterDto(string Username, string Email, string Password);
     
 }

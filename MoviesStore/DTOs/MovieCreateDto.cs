@@ -9,7 +9,6 @@ namespace MoviesStore.DTOs
         public string Title { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "At least one Genre ID is required")]
-        
         public List<int> GenreIds { get; set; } = [];
 
         [Required(ErrorMessage = "Release Year is required")]
@@ -22,7 +21,14 @@ namespace MoviesStore.DTOs
         public string Description { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "At least one Category ID is required")]
-        
+
+        public int RuntimeMinutes { get; set; }
+        public string ThumbnailUrl { get; set; } = string.Empty;
+        public string BackdropUrl { get; set; } = string.Empty;
+        public string AgeRating { get; set; } = "TV-MA";
+
         public List<int> CategoryIds { get; set; } = [];
+        
     }
 }
+

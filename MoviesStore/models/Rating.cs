@@ -9,8 +9,7 @@ namespace MoviesStore.models
         public int Score { get; set; }
         public int ProfileId { get; set; }
         public Profile Profile { get; set; } = null!;
-
-        public DateTime RatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime RatedDate { get; set; } = DateTime.UtcNow;
 
 
     }

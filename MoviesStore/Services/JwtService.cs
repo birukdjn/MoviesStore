@@ -10,25 +10,48 @@ namespace MoviesStore.Services
     {
         private readonly IConfiguration _config = config;
 
-        public string GenerateToken(User user)
+        private SymmetricSecurityKey GetSigningKey() =>
+            new(Encoding.UTF8.GetBytes(_config.GetSection("Jwt").GetValue<string>("Key")!));
+
+        // Token properties
+        private string Issuer => _config["Jwt:Issuer"]!;
+        private string Audience => _config["Jwt:Audience"]!;
+        private SigningCredentials Creds => new(GetSigningKey(), SecurityAlgorithms.HmacSha256);
+
+        public string GenerateUserToken(User user)
         {
-            var jwt = _config.GetSection("Jwt");
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-
             var claims = new[]
-               {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Username),
-                new Claim("uid", user.Id.ToString()),
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), 
                 new Claim(ClaimTypes.Role, user.Role)
             };
+
             var token = new JwtSecurityToken(
-               issuer: jwt["Issuer"],
-               audience: jwt["Audience"],
+               issuer: Issuer,
+               audience: Audience,
                claims: claims,
-               expires: DateTime.UtcNow.AddHours(6),
-               signingCredentials: creds
+               expires: DateTime.UtcNow.AddMinutes(15), 
+               signingCredentials: Creds
+           );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public string GenerateProfileToken(Profile profile)
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, profile.UserId.ToString()), 
+                new Claim("ProfileId", profile.Id.ToString()), 
+                new Claim(ClaimTypes.Role, profile.User.Role) 
+            };
+
+            var token = new JwtSecurityToken(
+               issuer: Issuer,
+               audience: Audience,
+               claims: claims,
+               expires: DateTime.UtcNow.AddHours(6), 
+               signingCredentials: Creds
            );
 
             return new JwtSecurityTokenHandler().WriteToken(token);

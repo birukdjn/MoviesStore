@@ -6,6 +6,9 @@ using System.Text;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using System.Globalization;
+using MoviesStore.Services;
+using MoviesStore.data;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +22,8 @@ services.AddDbContext<AppDbContext>(options =>
 
 services.AddControllers();
 services.AddEndpointsApiExplorer();
+
+services.AddScoped<IJwtService, JwtService>();
 
 services.AddSwaggerGen(options =>
 {
@@ -103,6 +108,12 @@ services.AddAuthorization();
 
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    DbSeeder.Seed(db);
+}
 
 
 //----------------------------middleware pipeline configuration----------------------------//
