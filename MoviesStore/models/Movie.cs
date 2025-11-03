@@ -8,16 +8,16 @@ namespace MoviesStore.models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
-        public string Genre { get; set; } = string.Empty;
         public int ReleaseYear { get; set; }
         public string Director { get; set; } = string.Empty;
         public string Description {  get; set; } = string.Empty;
 
-        public List<Favorite> Favorites { get; set; } = new();
-        public List<Rating> Ratings { get; set; } = new();
+        public List<Favorite> Favorites { get; set; } = [];
+        public List<Rating> Ratings { get; set; } = [];
+        public List<MovieGenre> MovieGenres { get; set; } = [];
+        public List<MovieCategory> MovieCategories { get; set; } = [];
 
-        public int CategoryId { get; set; }      
-        public Category Category { get; set; } = null!;
+
 
 
     }

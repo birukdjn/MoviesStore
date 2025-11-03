@@ -1,93 +1,79 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using MoviesStore.models;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using MoviesStore.Data;
+using MoviesStore.Services;
+using MoviesStore.DTOs;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MoviesStore.Controllers
-
 {
+    
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController:ControllerBase
+    public class AuthController(AppDbContext context, IJwtService jwt) : ControllerBase
     {
-        private readonly AppDbContext _Context;
-        private readonly IConfiguration _configuration;
-
-        public AuthController(AppDbContext context, IConfiguration configuration)
-        {
-            _Context = context;
-            _configuration = configuration;
-        }
-
         [HttpPost("register")]
-        public IActionResult Register(UserDto request)
+        public async Task<IActionResult> Register([FromBody] UserRegisterDto dto)
         {
-            if (_Context.Users.Any(u => u.Username == request.username))
+            
+            if (await context.Users.AnyAsync(u => u.Username == dto.Username))
                 return BadRequest("Username already exists.");
 
-            string PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.password);
+            string PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
             var user = new User
             {
-                Username = request.username,
+                Username = dto.Username,
                 PasswordHash = PasswordHash,
             };
 
-            _Context.Users.Add(user);
-            _Context.SaveChanges();
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
 
-            return Ok("User registered Successfully!");
+            
+            return CreatedAtAction(nameof(Register), new { id = user.Id }, new { user.Id, user.Username });
         }
 
         [HttpPost("login")]
-
-        public IActionResult Login(UserDto request)
+        public async Task<IActionResult> Login([FromBody] UserLoginDto dto)
         {
-            var user = _Context.Users.FirstOrDefault(u => u.Username == request.username);
-            if (user == null)
-              return BadRequest($"user {request.username} not found");
+            
+            var user = await context.Users.SingleOrDefaultAsync(u => u.Username == dto.Username);
 
-            if (!BCrypt.Net.BCrypt.Verify(request.password, user.PasswordHash))
+            
+            if ((user == null) || (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)))
+                return Unauthorized(new { message = "Invalid credentials" });
 
-                return BadRequest("Wrong Password");
+            
+            var token = jwt.GenerateToken(user);
 
-            string token = CreateToken(user);
-            return Ok(new { Token = token });
-
-
-
+            return Ok(new { token }); 
         }
 
-        private string CreateToken(User user)
+        [HttpGet("users")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<IEnumerable<UserPublicDto>>> GetRegisteredUsers()
         {
-            List<Claim> Claims = new List<Claim>
+            
+            var users = await context.Users
+                .Select(u => new UserPublicDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Role = u.Role 
+                })
+                .ToListAsync();
+
+            if (!users.Any())
             {
-                 new Claim(ClaimTypes.Name, user.Username)
-            };
+                return NotFound("No users found.");
+            }
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetValue<string>("Jwt:key")));
-
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-
-            var token = new JwtSecurityToken(
-                claims: Claims,
-                expires: DateTime.Now.AddDays(1),
-                signingCredentials: creds);
-
-            var jwt = new JwtSecurityTokenHandler().WriteToken(token);
-
-            return jwt;
+            return Ok(users); 
         }
-
-
     }
 
-    public class UserDto
-    {
-        public string username { get; set; } = string.Empty;
-        public string password { get; set; } = string.Empty;
-    }
+
+
 }

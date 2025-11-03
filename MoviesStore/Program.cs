@@ -3,35 +3,24 @@ using MoviesStore.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+using System.Globalization;
+
 
 var builder = WebApplication.CreateBuilder(args);
+var configuration = builder.Configuration;
+var services = builder.Services;
 
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
 
-builder.Services.AddControllers();
+services.AddControllers();
+services.AddEndpointsApiExplorer();
 
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-
-var key = builder.Configuration.GetValue<string>("Jwt:Key"); 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
-        };
-    });
-
-builder.Services.AddSwaggerGen(options =>
+services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new() { Title = "MoviesStore", Version = "v1" });
 
@@ -62,27 +51,108 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+services.AddCors(options =>
+{
+    options.AddPolicy("allowedDomains", policy =>
+    {
+        policy.WithOrigins("https://birukdjn.vercel.app", "https://birukdjn.onrender.com").
+                AllowAnyHeader().
+                AllowAnyMethod();
+    });
+});
 
+services.AddResponseCompression();
+services.AddResponseCaching();
+services.AddLocalization();
 
-builder.Services.AddAuthorization();
+services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("fixed", config =>
+    {
+        config.PermitLimit = 20;
+        config.Window= TimeSpan.FromSeconds(10);
+        config.QueueLimit = 10;
+        config.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+    options.RejectionStatusCode = 429;
+});
+
+var jwtSection = configuration.GetSection("Jwt");
+var key = Encoding.UTF8.GetBytes(jwtSection.GetValue<string>("Key")!);
+
+services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    }).AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata= false;
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+            {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer= jwtSection["Issuer"],
+            ValidAudience= jwtSection["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey((key))
+        };
+    });
+
+services.AddAuthorization();
+
 
 var app = builder.Build();
 
 
-if (app.Environment.IsDevelopment() || true) //this is for testing purposes
+//----------------------------middleware pipeline configuration----------------------------//
+
+
+if (app.Environment.IsDevelopment() ) 
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+else
+{
+       app.UseExceptionHandler(errApp =>
+       {
+           errApp.Run(async context =>
+           {
+               context.Response.StatusCode = 500;
+               context.Response.ContentType = "application/json";
+               var errorFeature =context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+               var exception = errorFeature?.Error;
+               var result = System.Text.Json.JsonSerializer.Serialize( new { message ="An internal server error occured" });
+               await context.Response.WriteAsync(result);
+           });
+       });
+}
 app.UseHttpsRedirection();
+app.UseResponseCompression();
+app.UseRouting();
 
+app.UseCors("allowedDomains");
+
+
+
+var supportedCultures = new[] { new CultureInfo("en-US"), new CultureInfo("fr-FR"), new CultureInfo("es-ES"), new CultureInfo("de-DE"), new CultureInfo("it-IT") };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture("en-US")
+    .AddSupportedCultures(supportedCultures.Select(c => c.Name).ToArray())
+    .AddSupportedUICultures(supportedCultures.Select(c => c.Name).ToArray());
+
+app.UseRequestLocalization(localizationOptions);
+
+app.UseResponseCaching();
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 
 app.MapControllers();
-
 
 app.Run();

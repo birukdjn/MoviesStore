@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace MoviesStore.Models.DTOs
+namespace MoviesStore.DTOs
 {
     public class MovieCreateDto
     {
@@ -8,9 +8,9 @@ namespace MoviesStore.Models.DTOs
         [StringLength(100, ErrorMessage = "Title must not exceed 100 characters")]
         public string Title { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Genre is required")]
-        [StringLength(50, ErrorMessage = "Genre must not exceed 50 characters")]
-        public string Genre { get; set; } = string.Empty;
+        [Required(ErrorMessage = "At least one Genre ID is required")]
+        
+        public List<int> GenreIds { get; set; } = [];
 
         [Required(ErrorMessage = "Release Year is required")]
         public int ReleaseYear { get; set; }
@@ -21,7 +21,8 @@ namespace MoviesStore.Models.DTOs
         [Required(ErrorMessage = "Description is required")]
         public string Description { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "CategoryId is required")]
-        public int CategoryId { get; set; }
+        [Required(ErrorMessage = "At least one Category ID is required")]
+        
+        public List<int> CategoryIds { get; set; } = [];
     }
 }
