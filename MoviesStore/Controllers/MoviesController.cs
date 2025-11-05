@@ -14,21 +14,46 @@ namespace MoviesStore.Controllers
     {
         private readonly AppDbContext _context = context;
 
-        // GET: All movies
-        [HttpGet]
-        [Authorize(Roles ="Admin,User")]
-        public async Task<ActionResult<IEnumerable<Movie>>> GetMovies()
+        private MoviePublicDto MapToMoviePublicDto(Movie movie)
         {
-            var movies = await _context.Movies.ToListAsync();
-            if (!movies.Any())
-                return NotFound("No movies found.");
-            return Ok(movies);
+            return new MoviePublicDto
+            {
+                Id = movie.Id,
+                Title = movie.Title,
+                Description = movie.Description,
+                ReleaseYear = movie.ReleaseYear,
+                RuntimeMinutes = movie.RuntimeMinutes,
+                ThumbnailUrl = movie.ThumbnailUrl ?? string.Empty,
+                BackdropUrl = movie.BackdropUrl ?? string.Empty,
+                AgeRating = movie.AgeRating ?? string.Empty,
+                IsOriginal = movie.IsOriginal,
+                AverageRating = movie.AverageRating,
+
+                Genres = movie.MovieGenres?.Select(mg => mg.Genre.Name).ToList() ?? new List<string>(),
+                Categories = movie.MovieCategories?.Select(mc => mc.Category.Name).ToList() ?? new List<string>()
+            };
         }
 
-        // GET: Search movies by keyword
+        [HttpGet]
+        [Authorize(Roles ="Admin,User")]
+        public async Task<ActionResult<IEnumerable<MoviePublicDto>>> GetMovies()
+        {
+            var movies = await _context.Movies
+           .Include(m => m.MovieGenres!).ThenInclude(mg => mg.Genre)
+           .Include(m => m.MovieCategories!).ThenInclude(mc => mc.Category)
+           .ToListAsync();
+
+            if (!movies.Any())
+                return NotFound("No movies found.");
+
+            var movieDtos = movies.Select(MapToMoviePublicDto).ToList(); 
+            return Ok(movieDtos);
+
+        }
+
         [HttpGet("search")]
         [Authorize(Roles = "Admin,User")]
-        public async Task<IActionResult> SearchMovies(string query)
+        public async Task<ActionResult<IEnumerable<MoviePublicDto>>> SearchMovies(string query)
         {
             if (string.IsNullOrWhiteSpace(query))
                 return BadRequest("Query cannot be empty.");
@@ -45,32 +70,34 @@ namespace MoviesStore.Controllers
                     m.MovieCategories.Any(mc => mc.Category.Name.Contains(query))
                     ).ToListAsync();
 
-            return Ok(movies);
+                    var movieDtos = movies.Select(MapToMoviePublicDto).ToList();
+                    return Ok(movieDtos);
         }
 
-        //GET: Paged movies
         [HttpGet("paged")]
         [Authorize(Roles = "Admin,User")]
-        public IActionResult GetPagedMovies(int page = 1, int pageSize = 10)
+        public async Task<ActionResult<IEnumerable<MoviePublicDto>>> GetPagedMovies(int page = 1, int pageSize = 10) 
         {
-            var movies = _context.Movies
+            var movies = await _context.Movies
+                .Include(m => m.MovieGenres!).ThenInclude(mg => mg.Genre)
+                .Include(m => m.MovieCategories!).ThenInclude(mc => mc.Category)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToList();
+                .ToListAsync(); 
 
-            return Ok(movies);
+            var movieDtos = movies.Select(MapToMoviePublicDto).ToList();
+            return Ok(movieDtos);
         }
 
-        // GET: Filter movies by genre, year, or director
         [HttpGet("filter")]
         [Authorize(Roles = "Admin,User")]
-        public IActionResult FilterMovies(int? genreId, int? categoryId,  int? year, string? director)
+        public async Task<ActionResult<IEnumerable<MoviePublicDto>>> FilterMovies(int? genreId, int? categoryId, int? year, string? director)
         {
             var query = _context.Movies.AsQueryable();
 
             if (genreId.HasValue)
-                query = query.Where(m => m.MovieGenres.Any(mg =>mg.GenreId == genreId.Value));
-            
+                query = query.Where(m => m.MovieGenres.Any(mg => mg.GenreId == genreId.Value));
+
             if (categoryId.HasValue)
                 query = query.Where(m => m.MovieCategories.Any(mc => mc.CategoryId == categoryId.Value));
 
@@ -80,56 +107,63 @@ namespace MoviesStore.Controllers
             if (!string.IsNullOrEmpty(director))
                 query = query.Where(m => m.Director.Contains(director));
 
-            var filteredMovies = query
+            var filteredMovies = await query 
                 .Include(m => m.MovieGenres!)
                     .ThenInclude(mg => mg.Genre)
                 .Include(m => m.MovieCategories!)
                     .ThenInclude(mc => mc.Category)
-                .ToList();
+                .ToListAsync();
 
-            return Ok(filteredMovies);
-
+            var movieDtos = filteredMovies.Select(MapToMoviePublicDto).ToList();
+            return Ok(movieDtos);
         }
 
-        // GET: Single movie by ID
         [HttpGet("{id}")]
         [Authorize(Roles = "Admin,User")]
-        public async Task<ActionResult<Movie>> GetMovie(int id)
+        public async Task<ActionResult<MoviePublicDto>> GetMovie(int id)
         {
-            var movie = await _context.Movies.FindAsync(id);
+          var movie = await _context.Movies
+         .Include(m => m.MovieGenres!).ThenInclude(mg => mg.Genre)
+         .Include(m => m.MovieCategories!).ThenInclude(mc => mc.Category)
+         .FirstOrDefaultAsync(m => m.Id == id);
+
             if (movie == null)
                 return NotFound($"Movie with id {id} not found.");
-            return Ok(movie);
+
+            return Ok(MapToMoviePublicDto(movie));
         }
 
-        // GET: Recommend similar movies
         [HttpGet("recommend/{movieId}")]
         [Authorize(Roles = "Admin,User")]
-        public async Task<IActionResult> RecommendMovies(int movieId)
+        public async Task<ActionResult<IEnumerable<MoviePublicDto>>> RecommendMovies(int movieId) 
         {
-            var movie = _context.Movies.FirstOrDefault(m => m.Id == movieId);
+            var movie = await _context.Movies
+                .Include(m => m.MovieCategories)
+                .FirstOrDefaultAsync(m => m.Id == movieId);
+
             if (movie == null)
                 return NotFound("Movie not found.");
 
             var sharedCategoryIds = movie.MovieCategories.Select(mc => mc.CategoryId).ToList();
 
             var recommended = await _context.Movies
+                .Include(m => m.MovieGenres!).ThenInclude(mg => mg.Genre)
+                .Include(m => m.MovieCategories!).ThenInclude(mc => mc.Category)
                 .Where(m => m.Id != movieId &&
                             m.MovieCategories.Any(mc => sharedCategoryIds.Contains(mc.CategoryId)))
-                            .Take(5)
-                            .ToListAsync();
+                .Take(5)
+                .ToListAsync();
 
-                            return Ok(recommended);
+            var movieDtos = recommended.Select(MapToMoviePublicDto).ToList();
+            return Ok(movieDtos);
         }
 
-        // POST: Add a new movie
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<Movie>> AddMovie([FromBody] MovieCreateDto dto)
+        public async Task<ActionResult<MoviePublicDto>> AddMovie([FromBody] MovieCreateDto dto)
         {
-            
 
             var movie = new Movie
             {
@@ -137,6 +171,11 @@ namespace MoviesStore.Controllers
                 ReleaseYear = dto.ReleaseYear,
                 Director = dto.Director,
                 Description = dto.Description,
+                RuntimeMinutes = dto.RuntimeMinutes,
+                ThumbnailUrl = dto.ThumbnailUrl,
+                BackdropUrl = dto.BackdropUrl,
+                AgeRating = dto.AgeRating,
+                IsOriginal = dto.IsOriginal
             };
 
             foreach (var categoryId in dto.CategoryIds)
@@ -160,10 +199,21 @@ namespace MoviesStore.Controllers
             _context.Movies.Add(movie);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetMovie), new { id = movie.Id }, movie);
+            await _context.Entry(movie)
+        .Collection(m => m.MovieCategories).LoadAsync();
+            await _context.Entry(movie)
+                .Collection(m => m.MovieGenres).LoadAsync();
+
+        var createdMovie = await _context.Movies
+        .Include(m => m.MovieGenres!).ThenInclude(mg => mg.Genre)
+        .Include(m => m.MovieCategories!).ThenInclude(mc => mc.Category)
+        .FirstAsync(m => m.Id == movie.Id);
+
+        var movieDto = MapToMoviePublicDto(createdMovie);
+
+            return CreatedAtAction(nameof(GetMovie), new { id = movieDto.Id }, movieDto);
         }
 
-        // PUT: Update a movie
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
 
@@ -217,7 +267,6 @@ namespace MoviesStore.Controllers
             return NoContent();
         }
 
-        // DELETE: Delete a movie
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
 
