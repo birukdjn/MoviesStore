@@ -46,7 +46,13 @@ namespace MoviesStore.Migrations
                     Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ReleaseYear = table.Column<int>(type: "int", nullable: false),
                     Director = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RuntimeMinutes = table.Column<int>(type: "int", nullable: false),
+                    ThumbnailUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    BackdropUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AgeRating = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsOriginal = table.Column<bool>(type: "bit", nullable: false),
+                    AverageRating = table.Column<double>(type: "float", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -59,10 +65,12 @@ namespace MoviesStore.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    Email = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Username = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Role = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    SubscriptionPlan = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -70,7 +78,7 @@ namespace MoviesStore.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MovieCategory",
+                name: "MovieCategories",
                 columns: table => new
                 {
                     MovieId = table.Column<int>(type: "int", nullable: false),
@@ -78,15 +86,15 @@ namespace MoviesStore.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MovieCategory", x => new { x.MovieId, x.CategoryId });
+                    table.PrimaryKey("PK_MovieCategories", x => new { x.MovieId, x.CategoryId });
                     table.ForeignKey(
-                        name: "FK_MovieCategory_Categories_CategoryId",
+                        name: "FK_MovieCategories_Categories_CategoryId",
                         column: x => x.CategoryId,
                         principalTable: "Categories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_MovieCategory_Movies_MovieId",
+                        name: "FK_MovieCategories_Movies_MovieId",
                         column: x => x.MovieId,
                         principalTable: "Movies",
                         principalColumn: "Id",
@@ -94,7 +102,7 @@ namespace MoviesStore.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MovieGenre",
+                name: "MovieGenres",
                 columns: table => new
                 {
                     MovieId = table.Column<int>(type: "int", nullable: false),
@@ -102,15 +110,15 @@ namespace MoviesStore.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MovieGenre", x => new { x.MovieId, x.GenreId });
+                    table.PrimaryKey("PK_MovieGenres", x => new { x.MovieId, x.GenreId });
                     table.ForeignKey(
-                        name: "FK_MovieGenre_Genres_GenreId",
+                        name: "FK_MovieGenres_Genres_GenreId",
                         column: x => x.GenreId,
                         principalTable: "Genres",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_MovieGenre_Movies_MovieId",
+                        name: "FK_MovieGenres_Movies_MovieId",
                         column: x => x.MovieId,
                         principalTable: "Movies",
                         principalColumn: "Id",
@@ -123,16 +131,9 @@ namespace MoviesStore.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    FirstName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    LastName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Country = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    City = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    State = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ZipCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    DateOfBirth = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AvatarUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsKidsProfile = table.Column<bool>(type: "bit", nullable: false),
                     UserId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -150,14 +151,14 @@ namespace MoviesStore.Migrations
                 name: "Favorites",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
                     MovieId = table.Column<int>(type: "int", nullable: false),
-                    ProfileId = table.Column<int>(type: "int", nullable: false)
+                    ProfileId = table.Column<int>(type: "int", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false),
+                    AddedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Favorites", x => x.Id);
+                    table.PrimaryKey("PK_Favorites", x => new { x.ProfileId, x.MovieId });
                     table.ForeignKey(
                         name: "FK_Favorites_Movies_MovieId",
                         column: x => x.MovieId,
@@ -173,17 +174,46 @@ namespace MoviesStore.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "PlaybackPositions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ProfileId = table.Column<int>(type: "int", nullable: false),
+                    MovieId = table.Column<int>(type: "int", nullable: false),
+                    PositionInSeconds = table.Column<int>(type: "int", nullable: false),
+                    TotalDurationInSeconds = table.Column<int>(type: "int", nullable: false),
+                    LastWatchedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PlaybackPositions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PlaybackPositions_Movies_MovieId",
+                        column: x => x.MovieId,
+                        principalTable: "Movies",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_PlaybackPositions_Profiles_ProfileId",
+                        column: x => x.ProfileId,
+                        principalTable: "Profiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Ratings",
                 columns: table => new
                 {
                     MovieId = table.Column<int>(type: "int", nullable: false),
                     ProfileId = table.Column<int>(type: "int", nullable: false),
                     Score = table.Column<int>(type: "int", nullable: false),
-                    RatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    RatedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Ratings", x => new { x.MovieId, x.ProfileId });
+                    table.PrimaryKey("PK_Ratings", x => new { x.ProfileId, x.MovieId });
                     table.ForeignKey(
                         name: "FK_Ratings_Movies_MovieId",
                         column: x => x.MovieId,
@@ -204,19 +234,24 @@ namespace MoviesStore.Migrations
                 column: "MovieId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Favorites_ProfileId",
-                table: "Favorites",
-                column: "ProfileId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MovieCategory_CategoryId",
-                table: "MovieCategory",
+                name: "IX_MovieCategories_CategoryId",
+                table: "MovieCategories",
                 column: "CategoryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MovieGenre_GenreId",
-                table: "MovieGenre",
+                name: "IX_MovieGenres_GenreId",
+                table: "MovieGenres",
                 column: "GenreId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PlaybackPositions_MovieId",
+                table: "PlaybackPositions",
+                column: "MovieId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PlaybackPositions_ProfileId",
+                table: "PlaybackPositions",
+                column: "ProfileId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Profiles_UserId",
@@ -224,9 +259,15 @@ namespace MoviesStore.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Ratings_ProfileId",
+                name: "IX_Ratings_MovieId",
                 table: "Ratings",
-                column: "ProfileId");
+                column: "MovieId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Email",
+                table: "Users",
+                column: "Email",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Username",
@@ -242,10 +283,13 @@ namespace MoviesStore.Migrations
                 name: "Favorites");
 
             migrationBuilder.DropTable(
-                name: "MovieCategory");
+                name: "MovieCategories");
 
             migrationBuilder.DropTable(
-                name: "MovieGenre");
+                name: "MovieGenres");
+
+            migrationBuilder.DropTable(
+                name: "PlaybackPositions");
 
             migrationBuilder.DropTable(
                 name: "Ratings");

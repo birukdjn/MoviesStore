@@ -1,5 +1,10 @@
-﻿namespace MoviesStore.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MoviesStore.DTOs
 {
-    public record UserRegisterDto(string Username, string Email, string Password);
+    public record UserRegisterDto(
+        [Required]string Username, 
+        [Required][EmailAddress]string Email, 
+        [Required][MinLength(8)]string Password);
     
 }

@@ -26,6 +26,7 @@ namespace MoviesStore.DTOs
         public string ThumbnailUrl { get; set; } = string.Empty;
         public string BackdropUrl { get; set; } = string.Empty;
         public string AgeRating { get; set; } = "TV-MA";
+        public bool IsOriginal { get; set; }
 
         public List<int> CategoryIds { get; set; } = [];
         

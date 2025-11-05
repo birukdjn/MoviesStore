@@ -12,8 +12,8 @@ using MoviesStore.Data;
 namespace MoviesStore.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251103140207_ApplyNetflixSchemaUpdates")]
-    partial class ApplyNetflixSchemaUpdates
+    [Migration("20251104062554_initialmigrations")]
+    partial class initialmigrations
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

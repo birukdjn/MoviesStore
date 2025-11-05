@@ -60,9 +60,10 @@ services.AddCors(options =>
 {
     options.AddPolicy("allowedDomains", policy =>
     {
-        policy.WithOrigins("https://birukdjn.vercel.app", "https://birukdjn.onrender.com").
+        policy.WithOrigins("http://localhost:3000", "https://localhost:3000").
                 AllowAnyHeader().
-                AllowAnyMethod();
+                AllowAnyMethod().
+                AllowCredentials();
     });
 });
 
@@ -109,11 +110,7 @@ services.AddAuthorization();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    DbSeeder.Seed(db);
-}
+
 
 
 //----------------------------middleware pipeline configuration----------------------------//
@@ -124,6 +121,12 @@ if (app.Environment.IsDevelopment() )
     app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        DbSeeder.Seed(db);
+    }
 }
 
 else
