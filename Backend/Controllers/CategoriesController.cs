@@ -20,7 +20,7 @@ namespace Backend.Controllers
             if (string.IsNullOrWhiteSpace(dto.Name))
                 return BadRequest(new { message = "Category name cannot be empty." });
 
-            if (_context.Categories.Any(c => c.Name.ToLower() == dto.Name.ToLower()))
+            if (_context.Categories.Any(c => c.Name.Equals(dto.Name, StringComparison.CurrentCultureIgnoreCase)))
                 return Conflict(new { message = "Category already exists." });
 
             var category = new Category { Name = dto.Name };

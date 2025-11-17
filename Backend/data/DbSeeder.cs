@@ -35,22 +35,6 @@ namespace Backend.data
                 admin = context.Users.First(u => u.Role == "Admin");
             }
 
-            // Seed admin profile if not exists
-            if (!context.Profiles.Any(p => p.UserId == admin.Id))
-            {
-                context.Profiles.Add(new Profile
-                {
-                    Name = "Biruk",
-                    Avatar = "/avatars/biruk.png",
-                    IsKidsProfile = false,
-                    UserId = admin.Id
-                });
-                context.SaveChanges();
-            }
-
-
-
-
             // --- 2. Seed Categories ---
             if (!context.Categories.Any())
             {
@@ -66,7 +50,7 @@ namespace Backend.data
                     new() { Name = "Kids & Family"}
                 };
                 context.Categories.AddRange(categories);
-                context.SaveChanges(); 
+                context.SaveChanges();
             }
 
             // --- 3. Seed Genres ---
@@ -99,12 +83,11 @@ namespace Backend.data
                 };
 
                 context.Genres.AddRange(genres);
-                context.SaveChanges(); 
+                context.SaveChanges();
             }
 
             if (!context.Movies.Any())
             {
-                
                 var adminUser = context.Users.First(u => u.Role == "Admin");
 
                 var moviesCategory = context.Categories.First(c => c.Name == "Movies");
@@ -127,7 +110,7 @@ namespace Backend.data
                 var thrillerGenre = context.Genres.First(g => g.Name == "Thrillers");
                 var cultGenre = context.Genres.First(g => g.Name == "Cult");
                 var classicGenre = context.Genres.First(g => g.Name == "Classic");
-
+                var musicGenre = context.Genres.First(g => g.Name == "Music");
 
                 var basicUser = new User
                 {
@@ -151,7 +134,7 @@ namespace Backend.data
 
                 var DadProfile = new Profile
                 {
-                    Name = "User Profile",
+                    Name = "Dad Profile",
                     Avatar = "/avatars/dad.png",
                     IsKidsProfile = false,
                     UserId = basicUser.Id
@@ -166,27 +149,32 @@ namespace Backend.data
                     UserId = basicUser.Id
                 };
                 context.Profiles.Add(kidsProfile);
-                context.SaveChanges(); 
+                context.SaveChanges();
 
                 var movies = new List<Movie>
                 {
+                    // 1. Music/Spiritual Film - Using actual Ethiopian music video
                     new() {
-                        Title = "Cosmic Guardian",
+                        Title = "Lidia Anteneh - Tayelegn",
                         ReleaseYear = 2025,
-                        Director = "Elena Rios",
-                        Description = "A futuristic soldier must protect the galaxy's last relic.",
-                        RuntimeMinutes = 145,
-                        AgeRating = "PG-13",
+                        Director = "Bereket Tesfaye",
+                        Description = "Lidia Anteneh @ Kingdom Sound Worship Night 2025 \"Tayelegn\" Original Song by Bereket Tesfaye & \"Ante kebreh Tay\" Original Song by Meskerem Getu",
+                        RuntimeMinutes = 19,
+                        AgeRating = "All Ages",
+                        ThumbnailUrl = "",
+                        BackdropUrl = "",
+                        VideoUrl = "https://www.youtube.com/watch?v=RKp3pjPHo64",
+                        YoutubeId = "RKp3pjPHo64",
                         IsOriginal = true,
-                        MovieCategories = new List<MovieCategory> { new MovieCategory { CategoryId = moviesCategory.Id } },
-                        MovieGenres = new List<MovieGenre>
-                        {
-                            new() { GenreId = actionGenre.Id },
-                            new () { GenreId = sciFiGenre.Id }
-                        }
+                        MovieCategories = [new MovieCategory { CategoryId = moviesCategory.Id }],
+                        MovieGenres =
+                        [
+                            new() { GenreId = musicGenre.Id },
+                            new () { GenreId = dramaGenre.Id }
+                        ]
                     },
 
-                    // 2. Family Comedy
+                    // 2. Family Comedy - Using official movie trailer
                     new() {
                         Title = "Dog's Day Out",
                         ReleaseYear = 2023,
@@ -194,16 +182,20 @@ namespace Backend.data
                         Description = "A talking golden retriever gets lost on a hilarious journey home.",
                         RuntimeMinutes = 98,
                         AgeRating = "TV-PG",
+                        ThumbnailUrl = "",
+                        BackdropUrl = "",
+                        VideoUrl = "https://www.youtube.com/watch?v=T0Qk7fdzb_c",
+                        YoutubeId = "T0Qk7fdzb_c",
                         IsOriginal = false,
-                        MovieCategories = new List<MovieCategory> { new MovieCategory { CategoryId = moviesCategory.Id } },
-                        MovieGenres = new List<MovieGenre>
-                        {
+                        MovieCategories = [new MovieCategory { CategoryId = moviesCategory.Id }],
+                        MovieGenres =
+                        [
                             new MovieGenre { GenreId = comedyGenre.Id },
                             new MovieGenre { GenreId = familyGenre.Id }
-                        }
+                        ]
                     },
 
-                    // 3. Historical Drama Series
+                    // 3. Historical Drama Series - Using actual series trailer
                     new() {
                         Title = "The Crown of Fire (S1 E1)",
                         ReleaseYear = 2022,
@@ -211,16 +203,20 @@ namespace Backend.data
                         Description = "The dramatic start of a new royal dynasty.",
                         RuntimeMinutes = 55,
                         AgeRating = "TV-MA",
+                        ThumbnailUrl = "",
+                        BackdropUrl = "",
+                        VideoUrl = "https://www.youtube.com/watch?v=JfVOs4VSpmA",
+                        YoutubeId = "JfVOs4VSpmA",
                         IsOriginal = true,
-                        MovieCategories = new List<MovieCategory> { new MovieCategory { CategoryId = seriesCategory.Id } },
-                        MovieGenres = new List<MovieGenre>
-                        {
+                        MovieCategories = [new MovieCategory { CategoryId = seriesCategory.Id }],
+                        MovieGenres =
+                        [
                             new MovieGenre { GenreId = dramaGenre.Id },
                             new MovieGenre { GenreId = classicGenre.Id }
-                        }
+                        ]
                     },
 
-                    // 4. True Crime Documentary
+                    // 4. True Crime Documentary - Using actual documentary
                     new() {
                         Title = "Shadows in the System",
                         ReleaseYear = 2024,
@@ -228,16 +224,20 @@ namespace Backend.data
                         Description = "A deep dive into a notorious, unsolved cold case.",
                         RuntimeMinutes = 110,
                         AgeRating = "TV-MA",
+                        ThumbnailUrl = "",
+                        BackdropUrl = "",
+                        VideoUrl = "https://www.youtube.com/watch?v=6k6JO0X2AHE",
+                        YoutubeId = "6k6JO0X2AHE",
                         IsOriginal = false,
-                        MovieCategories = new List<MovieCategory> { new MovieCategory { CategoryId = documentariesCategory.Id } },
-                        MovieGenres = new List<MovieGenre>
-                        {
+                        MovieCategories = [new MovieCategory { CategoryId = documentariesCategory.Id }],
+                        MovieGenres =
+                        [
                             new MovieGenre { GenreId = dramaGenre.Id },
                             new MovieGenre { GenreId = crimeGenre.Id }
-                        }
+                        ]
                     },
 
-                    // 5. Indie Horror Film
+                    // 5. Indie Horror Film - Using actual horror short film
                     new() {
                         Title = "The Whispering Woods",
                         ReleaseYear = 2021,
@@ -245,16 +245,20 @@ namespace Backend.data
                         Description = "Teenagers unleash an ancient evil in a remote forest cabin.",
                         RuntimeMinutes = 88,
                         AgeRating = "R",
+                        ThumbnailUrl = "",
+                        BackdropUrl = "",
+                        VideoUrl = "https://www.youtube.com/watch?v=4H5I1bBFt_c",
+                        YoutubeId = "4H5I1bBFt_c",
                         IsOriginal = false,
-                        MovieCategories = new List<MovieCategory> { new MovieCategory { CategoryId = moviesCategory.Id } },
-                        MovieGenres = new List<MovieGenre>
-                        {
+                        MovieCategories = [new MovieCategory { CategoryId = moviesCategory.Id }],
+                        MovieGenres =
+                        [
                             new MovieGenre { GenreId = horrorGenre.Id },
                             new MovieGenre { GenreId = independentGenre.Id }
-                        }
+                        ]
                     },
 
-                    // 6. Animated Anime Series
+                    // 6. Animated Anime Series - Using actual anime trailer
                     new() {
                         Title = "Cyber Samurai (Pilot)",
                         ReleaseYear = 2024,
@@ -262,16 +266,20 @@ namespace Backend.data
                         Description = "In a neon city, a disgraced warrior seeks redemption.",
                         RuntimeMinutes = 24,
                         AgeRating = "TV-14",
+                        ThumbnailUrl = "",
+                        BackdropUrl = "",
+                        VideoUrl = "https://www.youtube.com/watch?v=f9v4ALp-1pI",
+                        YoutubeId = "f9v4ALp-1pI",
                         IsOriginal = true,
-                        MovieCategories = new List<MovieCategory> { new MovieCategory { CategoryId = seriesCategory.Id } },
-                        MovieGenres = new List<MovieGenre>
-                        {
+                        MovieCategories = [new MovieCategory { CategoryId = seriesCategory.Id }],
+                        MovieGenres =
+                        [
                             new MovieGenre { GenreId = actionGenre.Id },
                             new MovieGenre { GenreId = animeGenre.Id }
-                        }
+                        ]
                     },
 
-                    // 7. Stand-Up Special
+                    // 7. Stand-Up Special - Using actual comedy special
                     new() {
                         Title = "Mark Z. Live in Vegas",
                         ReleaseYear = 2023,
@@ -279,15 +287,19 @@ namespace Backend.data
                         Description = "Comedian Mark Z. delivers an hour of razor-sharp social commentary.",
                         RuntimeMinutes = 60,
                         AgeRating = "TV-MA",
+                        ThumbnailUrl = "",
+                        BackdropUrl = "",
+                        VideoUrl = "https://www.youtube.com/watch?v=Xm2Nc6Cpl_k",
+                        YoutubeId = "Xm2Nc6Cpl_k",
                         IsOriginal = true,
-                        MovieCategories = new List<MovieCategory> { new MovieCategory { CategoryId = specialsCategory.Id } },
-                        MovieGenres = new List<MovieGenre>
-                        {
+                        MovieCategories = [new MovieCategory { CategoryId = specialsCategory.Id }],
+                        MovieGenres =
+                        [
                             new MovieGenre { GenreId = standUpGenre.Id }
-                        }
+                        ]
                     },
 
-                    // 8. Romantic Comedy
+                    // 8. Romantic Comedy - Using actual romance film trailer
                     new() {
                         Title = "Coffee Shop Connection",
                         ReleaseYear = 2020,
@@ -295,16 +307,20 @@ namespace Backend.data
                         Description = "Two strangers meet every morning, leading to an unexpected romance.",
                         RuntimeMinutes = 105,
                         AgeRating = "PG",
+                        ThumbnailUrl = "",
+                        BackdropUrl = "",
+                        VideoUrl = "https://www.youtube.com/watch?v=7TavVZMewpY",
+                        YoutubeId = "7TavVZMewpY",
                         IsOriginal = false,
-                        MovieCategories = new List<MovieCategory> { new MovieCategory { CategoryId = moviesCategory.Id } },
-                        MovieGenres = new List<MovieGenre>
-                        {
+                        MovieCategories = [new MovieCategory { CategoryId = moviesCategory.Id }],
+                        MovieGenres =
+                        [
                             new MovieGenre { GenreId = comedyGenre.Id },
                             new MovieGenre { GenreId = romanceGenre.Id }
-                        }
+                        ]
                     },
 
-                    // 9. Sports Documentary
+                    // 9. Sports Documentary - Using actual sports documentary
                     new() {
                         Title = "The Unbroken Record",
                         ReleaseYear = 2019,
@@ -312,15 +328,19 @@ namespace Backend.data
                         Description = "Chronicling the career of a legendary but controversial marathon runner.",
                         RuntimeMinutes = 95,
                         AgeRating = "TV-14",
+                        ThumbnailUrl = "",
+                        BackdropUrl = "",
+                        VideoUrl = "https://www.youtube.com/watch?v=Y66jBbUjXOQ",
+                        YoutubeId = "Y66jBbUjXOQ",
                         IsOriginal = false,
-                        MovieCategories = new List<MovieCategory> { new MovieCategory { CategoryId = documentariesCategory.Id } },
-                        MovieGenres = new List<MovieGenre>
-                        {
+                        MovieCategories = [new MovieCategory { CategoryId = documentariesCategory.Id }],
+                        MovieGenres =
+                        [
                             new MovieGenre { GenreId = sportsGenre.Id }
-                        }
+                        ]
                     },
 
-                    // 10. Cult Thriller
+                    // 10. Cult Thriller - Using actual thriller trailer
                     new() {
                         Title = "Midnight Drive",
                         ReleaseYear = 2005,
@@ -328,18 +348,22 @@ namespace Backend.data
                         Description = "A man picks up a mysterious passenger, leading to a night of terror.",
                         RuntimeMinutes = 92,
                         AgeRating = "R",
+                        ThumbnailUrl = "",
+                        BackdropUrl = "",
+                        VideoUrl = "https://www.youtube.com/watch?v=WMz3X5t7nC0",
+                        YoutubeId = "WMz3X5t7nC0",
                         IsOriginal = false,
-                        MovieCategories = new List<MovieCategory> { new MovieCategory { CategoryId = moviesCategory.Id } },
-                        MovieGenres = new List<MovieGenre>
-                        {
+                        MovieCategories = [new MovieCategory { CategoryId = moviesCategory.Id }],
+                        MovieGenres =
+                        [
                             new MovieGenre { GenreId = thrillerGenre.Id },
                             new MovieGenre { GenreId = cultGenre.Id }
-                        }
+                        ]
                     }
                 };
 
                 context.Movies.AddRange(movies);
-                context.SaveChanges(); // Save the 10 movies
+                context.SaveChanges();
 
                 // --- D. Seed Relationships (Ratings, Favorites, Playback) ---
 

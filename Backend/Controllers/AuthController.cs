@@ -11,16 +11,11 @@ namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public class AuthController(AppDbContext context, IJwtService jwt, IEmailSender emailSender) : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly IJwtService _jwt;
-
-        public AuthController(AppDbContext context, IJwtService jwt)
-        {
-            _context = context;
-            _jwt = jwt;
-        }
+        private readonly AppDbContext _context = context;
+        private readonly IJwtService _jwt = jwt;
+        private readonly IEmailSender _emailSender = emailSender;
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] UserRegisterDto dto)
@@ -53,6 +48,25 @@ namespace Backend.Controllers
             _context.Profiles.Add(defaultProfile);
             await _context.SaveChangesAsync();
 
+            try
+            {
+                var welcomeMessage = new Message(
+                    [user.Email],
+                    "Welcome to Our Streaming Service!",
+                    $"<h1>Hello {user.Username},</h1><p>Thank you for registering! You can now log in and start watching on your default profile.</p><p>If you have any questions, feel free to contact us.</p>"
+                   
+                );
+
+                // 🚀 Call the SendEmail method
+                _emailSender.SendEmail(welcomeMessage);
+            }
+            catch (Exception ex)
+            {
+                // In a production application, you should log this error, 
+                // but registration success should NOT depend on email success.
+                Console.WriteLine($"Error sending welcome email to {user.Email}: {ex.Message}");
+            }
+
             var userToken = _jwt.GenerateUserToken(user);
             defaultProfile.User = user;
             var profileToken = _jwt.GenerateProfileToken(defaultProfile);
@@ -74,7 +88,7 @@ namespace Backend.Controllers
                 {
                     id = defaultProfile.Id,
                     name = defaultProfile.Name,
-                    Avatar = defaultProfile.Avatar,
+                    defaultProfile.Avatar,
                 }
             });
         }      
@@ -88,6 +102,32 @@ namespace Backend.Controllers
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 return Unauthorized(new { message = "Invalid credentials" });
+
+            var currentIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            if (!string.IsNullOrEmpty(currentIp) && user.LastLoginIp != currentIp)
+            {
+                try
+                {
+                    var securityAlertMessage = new Message(
+                        [user.Email],
+                        "Security Alert: New Login Location Detected",
+                        $"<p>A login was just detected for your account from a new IP address: <strong>{currentIp}</strong>.</p><p>If this was you, you can safely ignore this email. If this was not you, please change your password immediately.</p>"
+                        
+
+                    );
+                    _emailSender.SendEmail(securityAlertMessage);
+
+                    
+                    // Update the user's last login IP
+                    user.LastLoginIp = currentIp;
+                    await _context.SaveChangesAsync(); // Save the IP change
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending security alert email to {user.Email}: {ex.Message}");
+                }
+            }
 
             var userToken = _jwt.GenerateUserToken(user);
 
@@ -200,7 +240,7 @@ namespace Backend.Controllers
                 })
                 .ToListAsync();
 
-            if (!users.Any()) return NotFound("No users found.");
+            if (users.Count==0) return NotFound("No users found.");
 
             return Ok(users);
         }

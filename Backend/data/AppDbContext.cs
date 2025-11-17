@@ -3,9 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
         // --- DbSet Properties (Clean and Complete) ---
         public DbSet<Movie> Movies { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;

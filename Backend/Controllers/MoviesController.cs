@@ -1,5 +1,4 @@
-﻿using Backend.Attributes;
-using Backend.data;
+﻿using Backend.data;
 using Backend.DTOs;
 using Backend.models;
 using Microsoft.AspNetCore.Authorization;
@@ -11,14 +10,10 @@ namespace Backend.Controllers
    
     [ApiController]
     [Route("api/[controller]")]
-    public class MoviesController : ControllerBase
+    [Authorize]
+    public class MoviesController(AppDbContext context) : ControllerBase
     {
-        private readonly AppDbContext _context;
-
-        public MoviesController(AppDbContext context)
-        {
-            _context= context;
-        }
+        private readonly AppDbContext _context = context;
 
         private MoviePublicDto MapToMoviePublicDto(Movie movie)
         {
@@ -35,13 +30,12 @@ namespace Backend.Controllers
                 IsOriginal = movie.IsOriginal,
                 AverageRating = movie.AverageRating,
 
-                Genres = movie.MovieGenres?.Select(mg => mg.Genre.Name).ToList() ?? new List<string>(),
-                Categories = movie.MovieCategories?.Select(mc => mc.Category.Name).ToList() ?? new List<string>()
+                Genres = movie.MovieGenres?.Select(mg => mg.Genre.Name).ToList() ?? [],
+                Categories = movie.MovieCategories?.Select(mc => mc.Category.Name).ToList() ?? []
             };
         }
 
         [HttpGet]
-        [RequireSubscription]
         [Authorize(Roles ="Admin,User")]
         public async Task<ActionResult<IEnumerable<MoviePublicDto>>> GetMovies()
         {
@@ -50,7 +44,7 @@ namespace Backend.Controllers
            .Include(m => m.MovieCategories!).ThenInclude(mc => mc.Category)
            .ToListAsync();
 
-            if (!movies.Any())
+            if (movies.Count==0)
                 return NotFound("No movies found.");
 
             var movieDtos = movies.Select(MapToMoviePublicDto).ToList(); 
@@ -59,7 +53,6 @@ namespace Backend.Controllers
         }
 
         [HttpGet("search")]
-        [RequireSubscription]
         [Authorize(Roles = "Admin,User")]
         public async Task<ActionResult<IEnumerable<MoviePublicDto>>> SearchMovies(string query)
         {
@@ -83,7 +76,6 @@ namespace Backend.Controllers
         }
 
         [HttpGet("paged")]
-        [RequireSubscription]
         [Authorize(Roles = "Admin,User")]
         public async Task<ActionResult<IEnumerable<MoviePublicDto>>> GetPagedMovies(int page = 1, int pageSize = 10) 
         {
@@ -99,7 +91,6 @@ namespace Backend.Controllers
         }
 
         [HttpGet("filter")]
-        [RequireSubscription]
         [Authorize(Roles = "Admin,User")]
         public async Task<ActionResult<IEnumerable<MoviePublicDto>>> FilterMovies(int? genreId, int? categoryId, int? year, string? director)
         {
@@ -129,7 +120,6 @@ namespace Backend.Controllers
         }
 
         [HttpGet("{id}")]
-        [RequireSubscription]
         [Authorize(Roles = "Admin,User")]
         public async Task<ActionResult<MoviePublicDto>> GetMovie(int id)
         {
@@ -178,15 +168,19 @@ namespace Backend.Controllers
 
             var movie = new Movie
             {
+                
                 Title = dto.Title,
-                ReleaseYear = dto.ReleaseYear,
-                Director = dto.Director,
                 Description = dto.Description,
+                ReleaseYear = dto.ReleaseYear,
                 RuntimeMinutes = dto.RuntimeMinutes,
-                ThumbnailUrl = dto.ThumbnailUrl,
-                BackdropUrl = dto.BackdropUrl,
-                AgeRating = dto.AgeRating,
-                IsOriginal = dto.IsOriginal
+                ThumbnailUrl = dto.ThumbnailUrl ?? string.Empty,
+                BackdropUrl = dto.BackdropUrl ?? string.Empty,
+                // Add YouTube fields
+                VideoUrl = dto.VideoUrl ?? string.Empty,
+                YoutubeId = dto.YoutubeId ?? string.Empty,
+                AgeRating = dto.AgeRating ?? string.Empty,
+                IsOriginal = dto.IsOriginal,
+    
             };
 
             foreach (var categoryId in dto.CategoryIds)

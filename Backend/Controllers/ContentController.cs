@@ -2,93 +2,121 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.data;
-using Backend.models;
-using System.Security.Claims; 
+using Microsoft.AspNetCore.Authorization;
 
-[ApiController]
-[Route("api/[controller]")]
-public class ContentController(AppDbContext context) : ControllerBase
+namespace Backend.Controllers
 {
-    private readonly AppDbContext _context = context;
-
-    private int GetCurrentProfileId()
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class ContentController(AppDbContext context) : ControllerBase
     {
-        var profileIdClaim = User.FindFirst("ProfileId")?.Value;
-        return int.Parse(profileIdClaim ?? "0");
-    }
+        private readonly AppDbContext _context = context;
 
-    [HttpGet("{movieId}")]
-    public async Task<ActionResult<MoviePublicDto>> GetMovieDetail(int movieId)
-    {
-        var movie = await _context.Movies
-            .Include(m => m.MovieGenres).ThenInclude(mg => mg.Genre)
-            .Include(m => m.MovieCategories).ThenInclude(mc => mc.Category)
-            .FirstOrDefaultAsync(m => m.Id == movieId);
-
-        if (movie == null) return NotFound();
-
-        var dto = new MoviePublicDto
+        private int GetCurrentProfileId()
         {
-            Id = movie.Id,
-            Title = movie.Title,
-            Description = movie.Description,
-            ReleaseYear = movie.ReleaseYear,
-            RuntimeMinutes = movie.RuntimeMinutes,
-            ThumbnailUrl = movie.ThumbnailUrl,
-            BackdropUrl = movie.BackdropUrl,
-            AgeRating = movie.AgeRating,
-            AverageRating = movie.AverageRating,
-            Genres = movie.MovieGenres.Select(mg => mg.Genre.Name).ToList(),
-            Categories = movie.MovieCategories.Select(mc => mc.Category.Name).ToList()
-        };
+            var profileIdClaim = User.FindFirst("ProfileId")?.Value;
+            return int.Parse(profileIdClaim ?? "0");
+        }
 
-        return Ok(dto);
-    }
+        [HttpGet("{movieId}")]
+        public async Task<ActionResult<MoviePublicDto>> GetMovieDetail(int movieId)
+        {
+            var movie = await _context.Movies
+                .Include(m => m.MovieGenres).ThenInclude(mg => mg.Genre)
+                .Include(m => m.MovieCategories).ThenInclude(mc => mc.Category)
+                .FirstOrDefaultAsync(m => m.Id == movieId);
 
-    [HttpGet("home")]
-    public async Task<ActionResult<HomeFeedDto>> GetHomeFeed()
-    {
-        var categoryRows = await _context.Categories
-            .Take(5)
-            .Select(c => new HomeFeedRowDto
+            if (movie == null) return NotFound();
+
+            var dto = new MoviePublicDto
             {
-                RowTitle = c.Name,
-                Movies = c.MovieCategories
-                    .Take(10)
-                    .Select(mc => new MoviePublicDto 
-                    {
-                        Id = mc.Movie.Id,
-                        Title = mc.Movie.Title,
-                        ThumbnailUrl = mc.Movie.ThumbnailUrl,
-                        AverageRating = mc.Movie.AverageRating
-                    }).ToList()
-            }).ToListAsync();
+                Id = movie.Id,
+                Title = movie.Title,
+                Description = movie.Description,
+                ReleaseYear = movie.ReleaseYear,
+                RuntimeMinutes = movie.RuntimeMinutes,
+                ThumbnailUrl = movie.ThumbnailUrl,
+                BackdropUrl = movie.BackdropUrl,
+                VideoUrl = movie.VideoUrl,
+                YoutubeId = movie.YoutubeId,
+                AgeRating = movie.AgeRating,
+                AverageRating = movie.AverageRating,
+                IsOriginal = movie.IsOriginal,
+                Genres = [.. movie.MovieGenres.Select(mg => mg.Genre.Name)],
+                Categories = [.. movie.MovieCategories.Select(mc => mc.Category.Name)]
+            };
 
-        var homeFeed = new HomeFeedDto
+            return Ok(dto);
+        }
+
+        [HttpGet("home")]
+        public async Task<ActionResult<HomeFeedDto>> GetHomeFeed()
         {
-            CategoryRows = categoryRows
-        };
+            var categoryRows = await _context.Categories
+                .Take(5)
+                .Select(c => new HomeFeedRowDto
+                {
+                    RowTitle = c.Name,
+                    Movies = c.MovieCategories
+                        .Take(10)
+                        .Select(mc => new MoviePublicDto
+                        {
+                            Id = mc.Movie.Id,
+                            Title = mc.Movie.Title,
+                            Description = mc.Movie.Description,
+                            ReleaseYear = mc.Movie.ReleaseYear,
+                            RuntimeMinutes = mc.Movie.RuntimeMinutes,
+                            ThumbnailUrl = mc.Movie.ThumbnailUrl,
+                            BackdropUrl = mc.Movie.BackdropUrl,
+                            VideoUrl = mc.Movie.VideoUrl,
+                            YoutubeId = mc.Movie.YoutubeId,
+                            AgeRating = mc.Movie.AgeRating,
+                            IsOriginal = mc.Movie.IsOriginal,
+                            AverageRating = mc.Movie.AverageRating,
+                            Genres = mc.Movie.MovieGenres.Select(mg => mg.Genre.Name).ToList(),
+                            Categories = mc.Movie.MovieCategories.Select(mcat => mcat.Category.Name).ToList()
+                        }).ToList()
+                }).ToListAsync();
 
-        return Ok(homeFeed);
-    }
+            var homeFeed = new HomeFeedDto
+            {
+                CategoryRows = categoryRows
+            };
 
-    [HttpGet("search")]
-    public async Task<ActionResult<IEnumerable<MoviePublicDto>>> SearchMovies([FromQuery] string q, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-    {
-        var movies = await _context.Movies
-            .Where(m => EF.Functions.Like(m.Title, $"%{q}%") || EF.Functions.Like(m.Description, $"%{q}%"))
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+            return Ok(homeFeed);
+        }
 
-        var dtos = movies.Select(m => new MoviePublicDto
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<MoviePublicDto>>> SearchMovies([FromQuery] string query, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            Id = m.Id,
-            Title = m.Title,
-            ThumbnailUrl = m.ThumbnailUrl,
-            AverageRating = m.AverageRating
-        }).ToList();
+            var movies = await _context.Movies
+                .Include(m => m.MovieGenres).ThenInclude(mg => mg.Genre)
+                .Include(m => m.MovieCategories).ThenInclude(mc => mc.Category)
+                .Where(m => EF.Functions.Like(m.Title, $"%{query}%") || EF.Functions.Like(m.Description, $"%{query}%"))
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
-        return Ok(dtos);
+            var dtos = movies.Select(m => new MoviePublicDto
+            {
+                Id = m.Id,
+                Title = m.Title,
+                Description = m.Description,
+                ReleaseYear = m.ReleaseYear,
+                RuntimeMinutes = m.RuntimeMinutes,
+                ThumbnailUrl = m.ThumbnailUrl,
+                BackdropUrl = m.BackdropUrl,
+                VideoUrl = m.VideoUrl,
+                YoutubeId = m.YoutubeId,
+                AgeRating = m.AgeRating,
+                IsOriginal = m.IsOriginal,
+                AverageRating = m.AverageRating,
+                Genres = [.. m.MovieGenres.Select(mg => mg.Genre.Name)],
+                Categories = [.. m.MovieCategories.Select(mc => mc.Category.Name)]
+            }).ToList();
+
+            return Ok(dtos);
+        }
     }
 }

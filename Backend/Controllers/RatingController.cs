@@ -5,8 +5,6 @@ using Backend.data;
 using Backend.models;
 using Backend.DTOs;
 
-using System.Security.Claims;
-
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]

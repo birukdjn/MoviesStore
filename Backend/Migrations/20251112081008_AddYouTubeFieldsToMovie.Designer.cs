@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251111064034_refereshtokens")]
-    partial class refereshtokens
+    [Migration("20251112081008_AddYouTubeFieldsToMovie")]
+    partial class AddYouTubeFieldsToMovie
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -124,6 +124,14 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("VideoUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("YoutubeId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Movies");
@@ -199,7 +207,7 @@ namespace Backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AvatarUrl")
+                    b.Property<string>("Avatar")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -241,6 +249,33 @@ namespace Backend.Migrations
                     b.ToTable("Ratings");
                 });
 
+            modelBuilder.Entity("Backend.models.Subscription", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Plan")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Subscriptions");
+                });
+
             modelBuilder.Entity("Backend.models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -248,6 +283,9 @@ namespace Backend.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Avatar")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -273,14 +311,8 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("StripeCustomerId")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime?>("SubscriptionExpiresAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("SubscriptionPlan")
-                        .HasColumnType("int");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -403,6 +435,17 @@ namespace Backend.Migrations
                     b.Navigation("Profile");
                 });
 
+            modelBuilder.Entity("Backend.models.Subscription", b =>
+                {
+                    b.HasOne("Backend.models.User", "User")
+                        .WithMany("Subscriptions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Backend.models.Category", b =>
                 {
                     b.Navigation("MovieCategories");
@@ -438,6 +481,8 @@ namespace Backend.Migrations
             modelBuilder.Entity("Backend.models.User", b =>
                 {
                     b.Navigation("Profiles");
+
+                    b.Navigation("Subscriptions");
                 });
 #pragma warning restore 612, 618
         }

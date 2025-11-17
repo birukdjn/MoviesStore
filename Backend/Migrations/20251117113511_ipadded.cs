@@ -5,18 +5,13 @@
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class avatar : Migration
+    public partial class ipadded : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "AvatarUrl",
-                table: "Profiles",
-                newName: "Avatar");
-
             migrationBuilder.AddColumn<string>(
-                name: "Avatar",
+                name: "LastLoginIp",
                 table: "Users",
                 type: "nvarchar(max)",
                 nullable: true);
@@ -26,13 +21,8 @@ namespace Backend.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "Avatar",
+                name: "LastLoginIp",
                 table: "Users");
-
-            migrationBuilder.RenameColumn(
-                name: "Avatar",
-                table: "Profiles",
-                newName: "AvatarUrl");
         }
     }
 }

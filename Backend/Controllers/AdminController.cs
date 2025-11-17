@@ -1,5 +1,6 @@
 ﻿using Backend.data;
 using Backend.models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,16 +8,12 @@ namespace Backend.Controllers
 {
     [ApiController]
     [Route("api/admin")]
-    public class AdminController : ControllerBase
+    [Authorize (Roles ="Admin")]
+    public class AdminController(AppDbContext context) : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext _context = context;
 
-        public AdminController(AppDbContext context)
-        {
-            _context = context;
-        }
-
-            [HttpGet("stats")]
+        [HttpGet("stats")]
             public async Task<IActionResult> GetStats()
             {
                 var totalUsers = await _context.Users.CountAsync();

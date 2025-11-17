@@ -12,16 +12,10 @@ namespace Backend.Controllers
     [Route("api/[controller]")]
     [ApiController]
     
-    public class PaymentsController : ControllerBase
+    public class PaymentsController(IConfiguration config, AppDbContext db) : ControllerBase
     {
-        private readonly IConfiguration _config;
-        private readonly AppDbContext _db;
-
-        public PaymentsController(IConfiguration config, AppDbContext db)
-        {
-            _config= config;
-            _db= db;
-        }
+        private readonly IConfiguration _config = config;
+        private readonly AppDbContext _db = db;
 
         // Create a Checkout Session (client will redirect to session.Url)
         [HttpPost("create-checkout-session")]
@@ -34,17 +28,16 @@ namespace Backend.Controllers
 
             int userId = int.Parse(userIdClaim);
 
-            var stripeKey = _config["Stripe:SecretKey"];
+            string? stripeKey = _config["Stripe:SecretKey"];
             var domain = _config["App:FrontendBaseUrl"];
 
 
             var options = new SessionCreateOptions
             {
-                PaymentMethodTypes = new List<string> { "card" },
-                LineItems = new List<SessionLineItemOptions>
-            {
-                new SessionLineItemOptions
-                {
+                PaymentMethodTypes = ["card"],
+                LineItems =
+            [
+                new() {
                     PriceData = new SessionLineItemPriceDataOptions
                     {
                         Currency = "usd",
@@ -58,7 +51,7 @@ namespace Backend.Controllers
                     },
                     Quantity = 1
                 }
-            },
+            ],
                 Mode = "payment", // you'd use "subscription" for recurring with Stripe Price objects
                 SuccessUrl = $"{domain}/success?session_id={{CHECKOUT_SESSION_ID}}",
                 CancelUrl = $"{domain}/cancel",

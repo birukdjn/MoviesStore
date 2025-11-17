@@ -15,10 +15,13 @@ namespace Backend.models
         public int RuntimeMinutes { get; set; }
         public string ThumbnailUrl { get; set; } = string.Empty;
         public string BackdropUrl { get; set; } = string.Empty;
+
+        public string VideoUrl { get; set; } = string.Empty;
+        public string YoutubeId { get; set; } = string.Empty;
         public string AgeRating { get; set; } = "TV-MA";
         public bool IsOriginal { get; set; } = false;
         public double AverageRating { get; set; } = 0.0;
-        public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+        public ICollection<Rating> Ratings { get; set; } = [];
         public ICollection<MovieCategory> MovieCategories { get; set; } = [];
         public ICollection<MovieGenre> MovieGenres { get; set; } = [];
         public ICollection<PlaybackPosition> PlaybackPositions { get; set; } = [];
