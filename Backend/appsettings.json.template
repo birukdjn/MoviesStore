@@ -1,0 +1,33 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": ""
+  },
+  "Jwt": {
+    "Key": "",
+    "Issuer": "MoviesStoreAPI",
+    "Audience": "MoviesStoreClient"
+  },
+  "EmailConfiguration": {
+    "From": "",
+    "SmtpServer": "",
+    "Port": 587,
+    "UserName": "",
+    "Password": "",
+    "EnableSsl": true
+  },
+  "Stripe": {
+    "SecretKey": "",
+    "PublishableKey": "",
+    "WebhookSecret": ""
+  },
+  "App": {
+    "FrontendBaseUrl": "http://localhost:3000"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}
