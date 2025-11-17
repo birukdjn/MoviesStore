@@ -1,0 +1,99 @@
+﻿using Microsoft.EntityFrameworkCore;
+using MoviesStore.models;
+
+namespace MoviesStore.Data
+{
+    public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+    {
+        // --- DbSet Properties (Clean and Complete) ---
+        public DbSet<Movie> Movies { get; set; } = null!;
+        public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Profile> Profiles { get; set; } = null!;
+        public DbSet<Genre> Genres { get; set; } = null!;
+        public DbSet<Category> Categories { get; set; } = null!;
+
+        // Join Tables
+        public DbSet<Favorite> Favorites { get; set; } = null!;
+        public DbSet<Rating> Ratings { get; set; } = null!;
+        public DbSet<PlaybackPosition> PlaybackPositions { get; set; } = null!;
+        public DbSet<MovieGenre> MovieGenres { get; set; } = null!;
+        public DbSet<MovieCategory> MovieCategories { get; set; } = null!;
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // --- 1. User Configuration ---
+            // If you changed Username to Email, this should be updated:
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Username)
+                .IsUnique();
+
+            // User to Profile (One User has Many Profiles)
+            modelBuilder.Entity<Profile>()
+                .HasOne(p => p.User)
+                .WithMany(u => u.Profiles)
+                .HasForeignKey(p => p.UserId);
+
+
+            // --- 2. MovieGenre (Many-to-Many) ---
+            modelBuilder.Entity<MovieGenre>()
+                .HasKey(mg => new { mg.MovieId, mg.GenreId });
+
+            // --- 3. MovieCategory (Many-to-Many) ---
+            modelBuilder.Entity<MovieCategory>()
+                .HasKey(mc => new { mc.MovieId, mc.CategoryId });
+
+
+            // --- 4. Favorite (Composite Key & Relationships) ---
+            modelBuilder.Entity<Favorite>()
+                .HasKey(f => new { f.ProfileId, f.MovieId }); // Define composite key
+
+            modelBuilder.Entity<Favorite>()
+                .HasOne(f => f.Profile)
+                .WithMany(p => p.Favorites)
+                .HasForeignKey(f => f.ProfileId)
+                .OnDelete(DeleteBehavior.Cascade); // If Profile is deleted, delete favorites
+
+            modelBuilder.Entity<Favorite>()
+                .HasOne(f => f.Movie)
+                .WithMany(m => m.Favorites)
+                .HasForeignKey(f => f.MovieId);
+
+
+            // --- 5. Rating (Composite Key & Relationships) ---
+            modelBuilder.Entity<Rating>()
+                .HasKey(r => new { r.ProfileId, r.MovieId }); // Define composite key (choose one order and stick to it)
+
+            modelBuilder.Entity<Rating>()
+                .HasOne(r => r.Profile)
+                .WithMany(p => p.Ratings)
+                .HasForeignKey(r => r.ProfileId)
+                .OnDelete(DeleteBehavior.Cascade); // If Profile is deleted, delete ratings
+
+            modelBuilder.Entity<Rating>()
+                .HasOne(r => r.Movie)
+                .WithMany(m => m.Ratings)
+                .HasForeignKey(r => r.MovieId);
+
+
+            // --- 6. PlaybackPosition ---
+            // Profile to PlaybackPosition
+            modelBuilder.Entity<PlaybackPosition>()
+                .HasOne(pp => pp.Profile)
+                .WithMany(p => p.PlaybackPositions)
+                .HasForeignKey(pp => pp.ProfileId);
+
+            // Movie to PlaybackPosition
+            modelBuilder.Entity<PlaybackPosition>()
+                .HasOne(pp => pp.Movie)
+                .WithMany(m => m.PlaybackPositions)
+                .HasForeignKey(pp => pp.MovieId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            base.OnModelCreating(modelBuilder);
+        }
+    }
+}
