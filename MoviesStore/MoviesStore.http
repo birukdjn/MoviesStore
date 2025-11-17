@@ -1,6 +1,0 @@
-@MoviesStore_HostAddress = http://localhost:5250
-
-GET {{MoviesStore_HostAddress}}/moviesStore/
-Accept: application/json
-
-###
