@@ -1,4 +1,4 @@
-# MoviesStore
+# MoviesApi
 
 MoviesStore is a web application with a backend API to manage movies. You can perform operations like viewing, adding, editing, and deleting movies. It also includes user authentication.
 
@@ -11,7 +11,7 @@ MoviesStore is a web application with a backend API to manage movies. You can pe
 
 ## Technologies Used
 
-- C# .NET 9
+- C# .NET 10
 - ASP.NET Core Web API
 - Entity Framework Core
 - SQL Server
