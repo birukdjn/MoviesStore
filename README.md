@@ -1,4 +1,4 @@
-# MoviesStore
+# MoviesApi
 
 MoviesStore is a web application with a backend API to manage movies. You can perform operations like viewing, adding, editing, and deleting movies. It also includes user authentication.
 
