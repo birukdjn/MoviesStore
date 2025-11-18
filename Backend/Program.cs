@@ -28,6 +28,12 @@ if (emailConfig is not null)
 
 services.AddScoped<IEmailSender, EmailSender>();
 
+builder.Services.Configure<TwilioSettings>(
+    builder.Configuration.GetSection("Twilio"));
+
+// 2. Register the SMS service
+builder.Services.AddScoped<ISmsService, SmsService>();
+
 services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 

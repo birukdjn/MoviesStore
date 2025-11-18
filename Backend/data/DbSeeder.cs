@@ -25,6 +25,7 @@ namespace Backend.data
                     Email = "Birukedjn@gmail.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("Birukdjn@8325"),
                     Role = "Admin",
+                    Phone ="+251908574808",
                     CreatedAt = DateTime.UtcNow
                 };
                 context.Users.Add(admin);
@@ -118,6 +119,7 @@ namespace Backend.data
                     Email = "user@example.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("user123"),
                     Role = "User",
+                    Phone ="+251777888325",
                     CreatedAt = DateTime.UtcNow
                 };
                 context.Users.Add(basicUser);

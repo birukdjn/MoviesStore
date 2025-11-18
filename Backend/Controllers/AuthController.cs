@@ -11,11 +11,12 @@ namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController(AppDbContext context, IJwtService jwt, IEmailSender emailSender) : ControllerBase
+    public class AuthController(AppDbContext context, IJwtService jwt, IEmailSender emailSender, ISmsService smsService) : ControllerBase
     {
         private readonly AppDbContext _context = context;
         private readonly IJwtService _jwt = jwt;
         private readonly IEmailSender _emailSender = emailSender;
+        private readonly ISmsService _smsService = smsService;
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] UserRegisterDto dto)
@@ -31,7 +32,8 @@ namespace Backend.Controllers
                 Email = dto.Email,
                 PasswordHash = passwordHash,
                 Avatar = dto.Avatar ??  "default_avatar.png",
-                Role = "User"
+                Role = "User",
+                Phone = dto.Phone,
             };
 
             _context.Users.Add(user);
@@ -48,13 +50,23 @@ namespace Backend.Controllers
             _context.Profiles.Add(defaultProfile);
             await _context.SaveChangesAsync();
 
+            
+            var userToken = _jwt.GenerateUserToken(user);
+            defaultProfile.User = user;
+            var profileToken = _jwt.GenerateProfileToken(defaultProfile);
+            var refreshToken = _jwt.GenerateRefreshToken();
+
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+            await _context.SaveChangesAsync();
+
             try
             {
                 var welcomeMessage = new Message(
                     [user.Email],
                     "Welcome to Our Streaming Service!",
                     $"<h1>Hello {user.Username},</h1><p>Thank you for registering! You can now log in and start watching on your default profile.</p><p>If you have any questions, feel free to contact us.</p>"
-                   
+
                 );
 
                 // 🚀 Call the SendEmail method
@@ -67,14 +79,19 @@ namespace Backend.Controllers
                 Console.WriteLine($"Error sending welcome email to {user.Email}: {ex.Message}");
             }
 
-            var userToken = _jwt.GenerateUserToken(user);
-            defaultProfile.User = user;
-            var profileToken = _jwt.GenerateProfileToken(defaultProfile);
-            var refreshToken = _jwt.GenerateRefreshToken();
+            try // 💡 Wrap SMS in a try-catch as well
+            {
+                // 💡 FIX 3: CS0103 resolved by using the new _smsService field
+                string phone = dto.Phone; // Assuming you added Phone property to UserRegisterDto
+                string message = $"Welcome to MoviesStore! Your account has been successfully registered.";
 
-            user.RefreshToken = refreshToken;
-            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
-            await _context.SaveChangesAsync();
+                await _smsService.SendSmsAsync(phone, message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending SMS to {user.Phone}: {ex.Message}");
+            }
+
 
             return Ok(new
             {
