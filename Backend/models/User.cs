@@ -20,6 +20,9 @@
         public bool IsSubscribed { get; set; } = false;
         public DateTime? SubscriptionExpiresAt { get; set; }
 
+        public string? PasswordResetToken { get; set; }
+        public DateTime? PasswordResetTokenExpiry { get; set; }
+
 
 
 

@@ -19,7 +19,7 @@ namespace Backend.data
         public DbSet<PlaybackPosition> PlaybackPositions { get; set; } = null!;
         public DbSet<MovieGenre> MovieGenres { get; set; } = null!;
         public DbSet<MovieCategory> MovieCategories { get; set; } = null!;
-
+        public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // --- 1. User Configuration ---
@@ -50,13 +50,13 @@ namespace Backend.data
 
             // --- 4. Favorite (Composite Key & Relationships) ---
             modelBuilder.Entity<Favorite>()
-                .HasKey(f => new { f.ProfileId, f.MovieId }); // Define composite key
+                .HasKey(f => new { f.ProfileId, f.MovieId });
 
             modelBuilder.Entity<Favorite>()
                 .HasOne(f => f.Profile)
                 .WithMany(p => p.Favorites)
                 .HasForeignKey(f => f.ProfileId)
-                .OnDelete(DeleteBehavior.Cascade); // If Profile is deleted, delete favorites
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Favorite>()
                 .HasOne(f => f.Movie)
@@ -75,13 +75,13 @@ namespace Backend.data
 
             // --- 5. Rating (Composite Key & Relationships) ---
             modelBuilder.Entity<Rating>()
-                .HasKey(r => new { r.ProfileId, r.MovieId }); // Define composite key (choose one order and stick to it)
+                .HasKey(r => new { r.ProfileId, r.MovieId }); 
 
             modelBuilder.Entity<Rating>()
                 .HasOne(r => r.Profile)
                 .WithMany(p => p.Ratings)
                 .HasForeignKey(r => r.ProfileId)
-                .OnDelete(DeleteBehavior.Cascade); // If Profile is deleted, delete ratings
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Rating>()
                 .HasOne(r => r.Movie)
@@ -102,6 +102,11 @@ namespace Backend.data
                 .WithMany(m => m.PlaybackPositions)
                 .HasForeignKey(pp => pp.MovieId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PaymentTransaction>()
+                .Property(t => t.Amount)
+                .HasColumnType("decimal(18, 4)") 
+                .HasPrecision(18, 4);
 
             base.OnModelCreating(modelBuilder);
         }

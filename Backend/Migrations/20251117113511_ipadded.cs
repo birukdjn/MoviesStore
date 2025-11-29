@@ -1,11 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-#nullable disable
-
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class ipadded : Migration
+    public partial class Ipadded : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

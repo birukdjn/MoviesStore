@@ -108,7 +108,83 @@ namespace Backend.Controllers
                     defaultProfile.Avatar,
                 }
             });
-        }      
+        }
+        private string GenerateRandomPassword(int length = 12)
+        {
+            const string validChars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789!@$?_-";
+            var random = new Random();
+            var password = new char[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                password[i] = validChars[random.Next(validChars.Length)];
+            }
+            return new string(password);
+        }
+
+
+        [HttpPost("create-admin")]
+        [Authorize(Roles = "Admin")] 
+        public async Task<IActionResult> CreateUserByAdmin([FromBody] UserCreateByAdminDto dto)
+        {
+            if (await _context.Users.AnyAsync(u => u.Username == dto.Username || u.Email == dto.Email))
+                return BadRequest("Username or Email already exists.");
+
+            // 1. Generate Temporary Password
+            string tempPassword = GenerateRandomPassword();
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(tempPassword);
+
+            // 2. Create User Record
+            var user = new User
+            {
+                Username = dto.Username,
+                Email = dto.Email,
+                Phone = dto.Phone ?? string.Empty,
+                PasswordHash = passwordHash,
+                Role = "Admin",
+                Avatar = "default_avatar.png"
+
+
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+         
+            // 4. Send Email with Temporary Password
+            try
+            {
+                var emailBody = $"<h1>Account Created Successfully!</h1>" +
+                                $"<p>An administrator has created an account for you with the following details:</p>" +
+                                $"<ul>" +
+                                $"<li><strong>Username:</strong> {user.Username}</li>" +
+                                $"<li><strong>Temporary Password:</strong> <code>{tempPassword}</code></li>" + 
+                                $"</ul>" +
+                                $"<p>Please log in immediately and change your password for security purposes.</p>";
+
+                var message = new Message(
+                    [user.Email],
+                    "Your New Account Credentials",
+                    emailBody
+                );
+
+                _emailSender.SendEmail(message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending temporary password email to {user.Email}: {ex.Message}");
+                
+            }
+
+            return Ok(new
+            {
+                message = $"User {user.Username} created and temporary password sent to {user.Email}.",
+                userId = user.Id,
+                username = user.Username,
+                role = user.Role
+
+            });
+        }
 
 
         [HttpPost("login")]
@@ -264,7 +340,7 @@ namespace Backend.Controllers
 
         [HttpPost("refresh")]
         [AllowAnonymous]
-        public IActionResult Refresh([FromBody] Backend.models.RefreshRequest request)
+        public IActionResult Refresh([FromBody] RefreshRequest request)
         {
             var user = _context.Users.FirstOrDefault(u => u.RefreshToken == request.RefreshToken);
 
@@ -279,6 +355,86 @@ namespace Backend.Controllers
             _context.SaveChanges();
 
             return Ok(new { token = newToken, refreshToken = newRefreshToken });
+        }
+        private string GeneratePasswordResetToken()
+        {
+            // Generate a secure token (e.g., a GUID or a secure random string)
+            return Guid.NewGuid().ToString("N");
+        }
+
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+
+            if (user == null)
+            {
+                return Ok(new { message = "If an account associated with this email exists, a password reset link has been sent." });
+            }
+
+            var resetToken = GeneratePasswordResetToken();
+            user.PasswordResetToken = resetToken;
+            user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1); 
+
+            await _context.SaveChangesAsync();
+
+            var resetLink = $"http://localhost:3000//reset-password?token={resetToken}";
+
+            // 3. Send Email
+            try
+            {
+                var emailBody = $"<h1>Password Reset Request</h1>" +
+                                $"<p>You requested a password reset. Click the link below to set a new password:</p>" +
+                                $"<p><a href='{resetLink}'>Reset Your Password</a></p>" +
+                                $"<p>This link will expire in 1 hour. If you didn't request this, ignore this email.</p>";
+
+                var message = new Message(
+                    [user.Email],
+                    "Password Reset Request",
+                    emailBody
+                );
+
+                _emailSender.SendEmail(message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending password reset email to {user.Email}: {ex.Message}");
+                // Log the error but still return success to the user
+            }
+
+            return Ok(new { message = "If an account associated with this email exists, a password reset link has been sent." });
+        }
+
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        {
+            // 1. Find User by Token
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == dto.Token);
+
+            if (user == null || user.PasswordResetTokenExpiry < DateTime.UtcNow)
+            {
+                // Use a generic error message for security
+                return BadRequest(new { message = "Invalid or expired reset token." });
+            }
+
+            // 2. Validate New Password (Optional: add length/complexity checks here)
+            if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
+            {
+                return BadRequest(new { message = "New password must be at least 6 characters long." });
+            }
+
+            // 3. Hash and Update Password
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+
+            // 4. Invalidate Token
+            user.PasswordResetToken = null;
+            user.PasswordResetTokenExpiry = null;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Your password has been reset successfully. You can now log in." });
         }
     }
 }

@@ -19,11 +19,12 @@ namespace Backend.Services
         public async Task SendSmsAsync(string toPhoneNumber, string messageBody)
         {
             // Twilio requires phone numbers to be in E.164 format (e.g., +12025550100)
-            var message = await MessageResource.CreateAsync(
+            MessageResource messageResource = await MessageResource.CreateAsync(
                 to: new PhoneNumber(toPhoneNumber),
                 from: new PhoneNumber(_twilioSettings.PhoneNumber),
                 body: messageBody
             );
+            MessageResource message = messageResource;
 
             // Optional: Check the status of the message
             // Console.WriteLine($"Twilio Message Status: {message.Status}");

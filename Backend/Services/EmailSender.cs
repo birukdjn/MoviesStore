@@ -14,23 +14,21 @@ namespace Backend.Services
         {
             var emailMessage = CreateEmailMessage(message);
 
-            using (var client = new SmtpClient())
+            using var client = new SmtpClient();
+            try
             {
-                try
-                {
-                    client.Connect(_emailConfig.SmtpServer, _emailConfig.Port, SecureSocketOptions.StartTls);
-                    client.Authenticate(_emailConfig.UserName, _emailConfig.Password);
-                    client.Send(emailMessage);
-                }
-                catch
-                {
-                    // Log the exception here
-                    throw;
-                }
-                finally
-                {
-                    client.Disconnect(true);
-                }
+                client.Connect(_emailConfig.SmtpServer, _emailConfig.Port, SecureSocketOptions.StartTls);
+                client.Authenticate(_emailConfig.UserName, _emailConfig.Password);
+                client.Send(emailMessage);
+            }
+            catch
+            {
+                // Log the exception here
+                throw;
+            }
+            finally
+            {
+                client.Disconnect(true);
             }
         }
 

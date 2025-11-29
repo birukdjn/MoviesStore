@@ -28,16 +28,24 @@ if (emailConfig is not null)
 
 services.AddScoped<IEmailSender, EmailSender>();
 
+services.AddHttpClient<ChapaService>();
+
 builder.Services.Configure<TwilioSettings>(
     builder.Configuration.GetSection("Twilio"));
 
 // 2. Register the SMS service
-builder.Services.AddScoped<ISmsService, SmsService>();
+services.AddScoped<ISmsService, SmsService>();
 
 services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-services.AddControllers();
+
+services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler =
+            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 services.AddEndpointsApiExplorer();
 
 services.AddScoped<IJwtService, JwtService>();
@@ -110,6 +118,7 @@ services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey((key))
         };
     });
+
 
 services.AddAuthorizationBuilder()
         .AddPolicy("SubscribedOnly", policy =>

@@ -1,110 +1,133 @@
 ﻿using Backend.data;
+using Backend.models;
+using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Stripe;
-using Stripe.Checkout;
-using System.IO;
-using System.Threading.Tasks;
+using System.Security.Claims;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    
-    public class PaymentsController(IConfiguration config, AppDbContext db) : ControllerBase
+    public class PaymentsController(AppDbContext context, ChapaService chapa, IConfiguration config) : ControllerBase
     {
+        private readonly AppDbContext _context = context;
+        private readonly ChapaService _chapa = chapa;
         private readonly IConfiguration _config = config;
-        private readonly AppDbContext _db = db;
 
-        // Create a Checkout Session (client will redirect to session.Url)
-        [HttpPost("create-checkout-session")]
+        // ---------------------------------------------------------
+        // 1. START PAYMENT: Save the TxRef + UserId to Database
+        // ---------------------------------------------------------
         [Authorize]
-        public async Task<IActionResult> CreateCheckoutSession()
+        [HttpPost("create-chapa-session")]
+        public async Task<IActionResult> CreateChapaSession([FromQuery] decimal amount)
         {
-            // Get logged-in user id (however you store it — example using ClaimTypes.NameIdentifier)
-            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized();
+            // FIX: Retrieve and validate User ID from JWT claims
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                return Unauthorized("Invalid user token or user ID.");
 
-            int userId = int.Parse(userIdClaim);
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound("User not found.");
 
-            string? stripeKey = _config["Stripe:SecretKey"];
-            var domain = _config["App:FrontendBaseUrl"];
+            var callbackUrl = _config["Chapa:CallbackUrl"];
 
-
-            var options = new SessionCreateOptions
+            if (string.IsNullOrEmpty(callbackUrl))
             {
-                PaymentMethodTypes = ["card"],
-                LineItems =
-            [
-                new() {
-                    PriceData = new SessionLineItemPriceDataOptions
-                    {
-                        Currency = "usd",
-                        UnitAmount = 999,
-                        ProductData = new SessionLineItemPriceDataProductDataOptions
-                        {
-                            Name = "MoviesStore Monthly Subscription",
-                            Description = "Unlimited access for 1 month"
-                        },
-                        // Optionally: Recurring price for subscriptions (see below)
-                    },
-                    Quantity = 1
-                }
-            ],
-                Mode = "payment", // you'd use "subscription" for recurring with Stripe Price objects
-                SuccessUrl = $"{domain}/success?session_id={{CHECKOUT_SESSION_ID}}",
-                CancelUrl = $"{domain}/cancel",
-                ClientReferenceId = userId.ToString(), // handy to connect session -> user
+                return StatusCode(500, "Payment configuration error: Callback URL is missing.");
+            }
+
+            // FIX: Pass required user details to the Chapa service.
+            var firstName = user.Name.Split(' ').FirstOrDefault() ?? user.Username;
+            var lastName = user.Name.Split(' ').Skip(1).FirstOrDefault() ?? user.Username;
+
+            var (checkoutUrl, txRef) = await _chapa.CreatePaymentAsync(
+                user.Email,
+                amount,
+                callbackUrl,
+                firstName,
+                lastName,
+                user.Phone 
+            );
+
+            if (string.IsNullOrEmpty(checkoutUrl))
+                return StatusCode(500, "Failed to create payment session.");
+
+            var transaction = new PaymentTransaction
+            {
+                UserId = userId,
+                TxRef = txRef,
+                Amount = amount,
+                Status = "Pending",
+                CreatedAt = DateTime.UtcNow
             };
 
-            var service = new SessionService();
-            Session session = service.Create(options);
+            _context.PaymentTransactions.Add(transaction);
+            await _context.SaveChangesAsync();
 
-            return Ok(new { url = session.Url, id = session.Id });
+            return Ok(new { url = checkoutUrl });
         }
 
-        // Webhook to receive events from Stripe
-        [HttpPost("webhook")]
-        [AllowAnonymous] // Stripe calls this, no auth header
-        public async Task<IActionResult> Webhook()
+        // ---------------------------------------------------------
+        // 2. CALLBACK: Find the User using TxRef and Activate Subscription
+        // ---------------------------------------------------------
+        [HttpGet("chapa-callback")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ChapaCallback([FromQuery] string tx_ref)
         {
-            var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-            var webhookSecret = _config["Stripe:WebhookSecret"];
+            if (string.IsNullOrEmpty(tx_ref))
+                return BadRequest("Transaction reference is required.");
 
-            try
+            bool isPaidAtChapa = await _chapa.VerifyPaymentAsync(tx_ref);
+            if (!isPaidAtChapa) return BadRequest("Payment verification failed at Chapa.");
+
+            var transaction = await _context.PaymentTransactions
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t => t.TxRef == tx_ref);
+
+            if (transaction == null) return NotFound("Transaction record not found in local DB.");
+
+            // 3. Prevent Double Processing (Idempotency)
+            if (transaction.Status == "Success")
             {
-                var stripeEvent = EventUtility.ConstructEvent(
-                    json,
-                    Request.Headers["Stripe-Signature"],
-                    webhookSecret
-                );
-
-                
-                    if (stripeEvent.Type == EventTypes.CheckoutSessionCompleted)
-                    {
-                    var session = stripeEvent.Data.Object as Session;
-                    // Get user id from ClientReferenceId
-                    if (!string.IsNullOrEmpty(session.ClientReferenceId) && int.TryParse(session.ClientReferenceId, out var userId))
-                    {
-                        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-                        if (user != null)
-                        {
-                            // Mark subscription: for simple payments we give 30 days; adjust as needed
-                            user.IsSubscribed = true;
-                            user.SubscriptionExpiresAt = DateTime.UtcNow.AddDays(30);
-                            await _db.SaveChangesAsync();
-                        }
-                    }
-                }
-
-                // You can handle other events (invoice.paid, payment_intent.succeeded...) for recurring billing
-                return Ok();
+                // Already processed, just redirect
+                return Redirect("http://localhost:5173/success");
             }
-            catch (StripeException ex)
+           
+            // 4. Update Transaction Status
+            transaction.Status = "Success";
+
+            // 5. Activate User Subscription
+            var user = transaction.User;
+            if (user == null)
             {
-                return BadRequest(new { error = ex.Message });
+                // This scenario indicates a major data integrity issue (transaction without a linked user)
+                return StatusCode(500, "Internal Error: Transaction is missing a linked user profile.");
             }
+
+            // Logic to calculate end date (1 month from now)
+            var expiryDate = DateTime.UtcNow.AddMonths(1);
+
+            // Add Subscription Record
+            var subscription = new Subscription
+            {
+                UserId = user.Id,
+                Plan = SubscriptionPlan.Standard,
+                StartDate = DateTime.UtcNow,
+                EndDate = expiryDate
+            };
+            _context.Subscriptions.Add(subscription);
+
+            // Update User Profile
+            user.IsSubscribed = true;
+            user.SubscriptionExpiresAt = expiryDate;
+
+            // Save all changes in one transaction
+            await _context.SaveChangesAsync();
+
+            // 6. Redirect to Frontend
+            return Redirect("http://localhost:5173/success");
         }
     }
 }
